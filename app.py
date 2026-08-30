@@ -75,12 +75,7 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions",
-    "GIS": "GIS & Remote Sensing Resources",
-    "EIA": "EIA & Environmental Law",
-    "LAB": "Lab Manuals & Protocols",
-    "FIELD": "Field Work Reports & Data",
-    "STD": "Environmental Standards & Guidelines"
+    "MEQ": "Mid Exam Questions"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -102,18 +97,8 @@ with st.sidebar:
         admin_pass = st.text_input("🔒 Secret Key", type="password")
     else:
         admin_pass = ""
-        
-    st.caption("Designed for Academic Excellence 🚀")
-    
-    # Bottom Left ESE Info Card
-    st.markdown("""
-        <div style="background-color: #FFFFFF; padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; text-align: center;">
-            <p style="margin: 0; font-size: 0.85rem; font-weight: 600; color: #059669 !important;">🌍 Green Tech & Data Hub</p>
-            <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: #64748B !important;">GIS • EIA • Sustainability • Lab Resources</p>
-        </div>
-    """, unsafe_allow_html=True)
 
-# Top Hero Header (Sub-title Removed)
+# Top Hero Header
 st.markdown(f"""
     <div class="hero-card">
         <h1>🎓 {selected_code}: {selected_title}</h1>
