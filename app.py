@@ -8,7 +8,7 @@ import os
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Modern Professional UI CSS (Google Fonts & Custom Cards)
+# Modern Light Theme CSS & Sidebar Toggle Arrow Fix
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -20,9 +20,19 @@ st.markdown("""
     .stApp { background-color: #F8F9FA; color: #1E293B !important; }
     [data-testid="stSidebar"] { background-color: #E9ECEF; }
     
-    /* Global Text Fix */
+    /* Text Color Fixes */
     html, body, p, label, span, h1, h2, h3, h4, .stMarkdown { color: #1E293B !important; }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div { color: #1E293B !important; }
+    
+    /* Header & Sidebar Collapse Arrow Color Fix */
+    [data-testid="stHeader"] {
+        background-color: #F8F9FA !important;
+    }
+    [data-testid="stHeader"] button svg,
+    [data-testid="stSidebarCollapseButton"] button svg {
+        fill: #1E293B !important;
+        color: #1E293B !important;
+    }
     
     /* File Uploader Style */
     [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span { color: #FFFFFF !important; }
@@ -48,6 +58,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# ESE Department Courses & Resources List
 COURSES = {
     "ESE 2101": "Hydrology and Hydrogeology",
     "ESE 2103": "Oceanography and Limnology",
@@ -61,7 +72,12 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions"
+    "MEQ": "Mid Exam Questions",
+    "GIS": "GIS & Remote Sensing Resources",
+    "EIA": "EIA & Environmental Law",
+    "LAB": "Lab Manuals & Protocols",
+    "FIELD": "Field Work Reports & Data",
+    "STD": "Environmental Standards & Guidelines"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -70,32 +86,22 @@ course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=65)
     st.title("Workspace Navigation")
+    
     selected_option = st.selectbox("📌 Select Course", course_options)
     selected_code = selected_option.split(" - ")[0]
     selected_title = COURSES[selected_code]
     
-   st.divider()
+    st.divider()
+    
+    # Hidden Admin Panel via URL Parameter
     query_params = st.query_params
     if query_params.get("admin") == "true":
         admin_pass = st.text_input("🔒 Secret Key", type="password")
     else:
         admin_pass = ""
+        
     st.caption("Designed for Academic Excellence 🚀")
-st.markdown("""
-    <style>
-    /* হেডার পার্টের ব্যাকগ্রাউন্ড লাইট করা */
-    [data-testid="stHeader"] {
-        background-color: #F8F9FA !important;
-    }
-    
-    /* সাইডবার অ্যারো আইকনের কালার ডার্ক/কালো করা */
-    [data-testid="stHeader"] button svg,
-    [data-testid="stSidebarCollapseButton"] button svg {
-        fill: #1E293B !important;
-        color: #1E293B !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+
 # Top Professional Hero Header
 st.markdown(f"""
     <div class="hero-card">
@@ -121,8 +127,9 @@ def ask_gemini(llm, docs, question):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if uploaded_files and api_key:
-    os.environ["GOOGLE_API_KEY"] = api_key
+# Fetching API Key directly from Streamlit Secrets
+if uploaded_files:
+    os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
     raw_text = ""
     total_pages = 0
     
@@ -193,4 +200,3 @@ if uploaded_files and api_key:
                 formula_res = ask_gemini(llm, docs, "সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।")
                 st.write(formula_res)
                 st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
-        
