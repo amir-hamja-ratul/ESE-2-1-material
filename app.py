@@ -72,12 +72,7 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions",
-    "GIS": "GIS & Remote Sensing Resources",
-    "EIA": "EIA & Environmental Law",
-    "LAB": "Lab Manuals & Protocols",
-    "FIELD": "Field Work Reports & Data",
-    "STD": "Environmental Standards & Guidelines"
+    "MEQ": "Mid Exam Questions"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
