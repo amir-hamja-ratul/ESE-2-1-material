@@ -78,6 +78,30 @@ COURSES = {
 }
 
 # Sidebar
+import streamlit as st
+# ... আপনার আগের বাকি সব import ...
+
+# সাইডবার
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=70)
+    st.title("Semester Workspace")
+    
+    # কোর্স সিলেক্ট
+    selected_option = st.selectbox("📌 Select Course", course_options)
+    selected_code = selected_option.split(" - ")[0]
+    
+    st.divider()
+    # অ্যাডমিন সিক্রেট পাসওয়ার্ড (শুধু আপনার জন্য)
+    admin_pass = st.text_input("🔒 Admin Access (For Uploading)", type="password")
+
+# পাসওয়ার্ড ঠিক থাকলে শুধু আপনার জন্য আপলোড অপশন চালু হবে
+# যেমন: আপনার পাসওয়ার্ড '1234' (ইচ্ছেমতো বদলে নিন)
+if admin_pass == "285277":
+    st.success("Admin Verified: You can upload files")
+    uploaded_files = st.file_uploader("📥 আপলোড করুন (PDF Documents)", accept_multiple_files=True, type="pdf")
+else:
+    st.info("ℹ️ View Mode: Student Access")
+    uploaded_files = None
 # কোড এবং নাম একত্রে লিস্ট তৈরি
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
