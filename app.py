@@ -75,7 +75,11 @@ with st.sidebar:
     selected_title = COURSES[selected_code]
     
     st.divider()
-    admin_pass = st.text_input("🔒 Admin Access (For Uploading)", type="password")
+   query_params = st.query_params
+    if query_params.get("admin") == "true":
+        admin_pass = st.text_input("🔒 Secret Key", type="password")
+    else:
+        admin_pass = ""
     st.caption("Designed for Academic Excellence 🚀")
 st.markdown("""
     <style>
