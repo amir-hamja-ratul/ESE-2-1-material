@@ -8,7 +8,15 @@ import os
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 # White-Gray Theme Custom CSS
-# Perfect Light-Gray Theme CSS
+st.markdown("""
+    <style>
+    /* আপলোড বক্সের ভেতরের সাব-টেক্সট সাদা করার জন্য */
+    [data-testid="stFileUploader"] small, 
+    [data-testid="stFileUploader"] span {
+        color: #FFFFFF !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 st.markdown("""
     <style>
     /* মূল অ্যাপ ব্যাকগ্রাউন্ড ও ডার্ক টেক্সট */
