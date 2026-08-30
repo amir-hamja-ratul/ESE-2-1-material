@@ -24,7 +24,6 @@ st.markdown("""
 
 COURSES =
 {
-
     "ESE 2101": "Hydrology and Hydrogeology",
     "ESE 2103": "Oceanography and Limnology",
     "ESE 2105": "Ecology",
@@ -37,7 +36,7 @@ COURSES =
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment"
      "PYQ": "Previous Year Questions",
-     "MEQ": "Mid Exam Questions",
+     "MEQ": "Mid Exam Questions"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
