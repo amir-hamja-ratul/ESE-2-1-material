@@ -7,7 +7,19 @@ import os
 
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
-
+# White-Gray Theme Custom CSS
+st.markdown("""
+    <style>
+    /* মূল ব্যাকগ্রাউন্ড - লাইট গ্রে ও সাদা */
+    .stApp {
+        background-color: #F8F9FA;
+    }
+    /* সাইডবার ব্যাকগ্রাউন্ড - সফট গ্রে */
+    [data-testid="stSidebar"] {
+        background-color: #E9ECEF;
+    }
+    </style>
+""", unsafe_allow_html=True)
 # Custom UI CSS Styling
 st.markdown("""
     <style>
