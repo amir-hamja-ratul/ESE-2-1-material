@@ -78,7 +78,21 @@ with st.sidebar:
     st.divider()
     admin_pass = st.text_input("🔒 Admin Access (For Uploading)", type="password")
     st.caption("Designed for Academic Excellence 🚀")
-
+st.markdown("""
+    <style>
+    /* হেডার পার্টের ব্যাকগ্রাউন্ড লাইট করা */
+    [data-testid="stHeader"] {
+        background-color: #F8F9FA !important;
+    }
+    
+    /* সাইডবার অ্যারো আইকনের কালার ডার্ক/কালো করা */
+    [data-testid="stHeader"] button svg,
+    [data-testid="stSidebarCollapseButton"] button svg {
+        fill: #1E293B !important;
+        color: #1E293B !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 # Top Professional Hero Header
 st.markdown(f"""
     <div class="hero-card">
