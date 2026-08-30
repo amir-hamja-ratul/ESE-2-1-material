@@ -47,7 +47,7 @@ st.markdown("""
         margin-bottom: 20px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    .hero-card h1, .hero-card p { color: white !important; margin: 0; }
+    .hero-card h1 { color: white !important; margin: 0; }
     
     .stButton>button {
         border-radius: 8px;
@@ -58,7 +58,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Top Department Header (Bigger & Bold)
+# Top Department Header
 st.markdown("<h2 style='text-align: center; color: #1E293B; font-size: 1.8rem; font-weight: 700; margin-bottom: 24px;'>🌱 Department of Environmental Science and Engineering</h2>", unsafe_allow_html=True)
 
 # ESE Department Courses & Resources List
@@ -75,7 +75,12 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions"
+    "MEQ": "Mid Exam Questions",
+    "GIS": "GIS & Remote Sensing Resources",
+    "EIA": "EIA & Environmental Law",
+    "LAB": "Lab Manuals & Protocols",
+    "FIELD": "Field Work Reports & Data",
+    "STD": "Environmental Standards & Guidelines"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -108,11 +113,10 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-# Top Hero Header
+# Top Hero Header (Sub-title Removed)
 st.markdown(f"""
     <div class="hero-card">
         <h1>🎓 {selected_code}: {selected_title}</h1>
-        <p>AI-Powered Workspace • Smart Summaries & Exam Prep</p>
     </div>
 """, unsafe_allow_html=True)
 
