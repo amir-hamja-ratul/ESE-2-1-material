@@ -7,56 +7,16 @@ import os
 
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
-# White-Gray Theme Custom CSS
+
+# Perfect Light-Gray Theme CSS
 st.markdown("""
     <style>
-    /* ফাইল আপলোড বাটনের টেক্সট ও আইকন সাদা করার জন্য */
-    [data-testid="stFileUploader"] button,
-    [data-testid="stFileUploader"] button * {
-        color: #FFFFFF !important;
-        fill: #FFFFFF !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-st.markdown("""
-    <style>
-    /* আপলোড বক্সের ভেতরের সাব-টেক্সট সাদা করার জন্য */
-    [data-testid="stFileUploader"] small, 
-    [data-testid="stFileUploader"] span {
-        color: #FFFFFF !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-st.markdown("""
-    <style>
-    /* মূল অ্যাপ ব্যাকগ্রাউন্ড ও ডার্ক টেক্সট */
-    .stApp {
-        background-color: #F8F9FA;
-        color: #1E293B !important;
-    }
-    
-    /* সাইডবার ব্যাকগ্রাউন্ড ও টেক্সট কালার ফিক্স */
-    [data-testid="stSidebar"] {
-        background-color: #E9ECEF;
-    }
-    
-    /* সব ধরণের লেখা স্পষ্ট ও কালো রাখা */
-    html, body, p, label, span, h1, h2, h3, h4, .stMarkdown {
-        color: #1E293B !important;
-    }
-    
-    /* সাইডবারের ভিতরের লেখার কালার ফিক্স */
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] label, 
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] div {
-        color: #1E293B !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-# Custom UI CSS Styling
-st.markdown("""
-    <style>
+    .stApp { background-color: #F8F9FA; color: #1E293B !important; }
+    [data-testid="stSidebar"] { background-color: #E9ECEF; }
+    html, body, p, label, span, h1, h2, h3, h4, .stMarkdown { color: #1E293B !important; }
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div { color: #1E293B !important; }
+    [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span { color: #FFFFFF !important; }
+    [data-testid="stFileUploader"] button, [data-testid="stFileUploader"] button * { color: #FFFFFF !important; fill: #FFFFFF !important; }
     .main-header { font-size: 2.2rem; font-weight: 700; color: #4F46E5; }
     .stButton>button { width: 100%; border-radius: 8px; font-weight: 600; }
     </style>
@@ -77,32 +37,6 @@ COURSES = {
     "ESE 2113": "Statistics for Environment"
 }
 
-# Sidebar
-import streamlit as st
-# ... আপনার আগের বাকি সব import ...
-
-# সাইডবার
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=70)
-    st.title("Semester Workspace")
-    
-    # কোর্স সিলেক্ট
-    selected_option = st.selectbox("📌 Select Course", course_options)
-    selected_code = selected_option.split(" - ")[0]
-    
-    st.divider()
-    # অ্যাডমিন সিক্রেট পাসওয়ার্ড (শুধু আপনার জন্য)
-    admin_pass = st.text_input("🔒 Admin Access (For Uploading)", type="password")
-
-# পাসওয়ার্ড ঠিক থাকলে শুধু আপনার জন্য আপলোড অপশন চালু হবে
-# যেমন: আপনার পাসওয়ার্ড '1234' (ইচ্ছেমতো বদলে নিন)
-if admin_pass == "285277":
-    st.success("Admin Verified: You can upload files")
-    uploaded_files = st.file_uploader("📥 আপলোড করুন (PDF Documents)", accept_multiple_files=True, type="pdf")
-else:
-    st.info("ℹ️ View Mode: Student Access")
-    uploaded_files = None
-# কোড এবং নাম একত্রে লিস্ট তৈরি
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 # Sidebar
@@ -110,20 +44,25 @@ with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=70)
     st.title("Semester Workspace")
     api_key = st.text_input("🔑 Enter Gemini API Key", type="password")
-    
-    # নাম বা কোড টাইপ করে সার্চ করার ড্রপডাউন
     selected_option = st.selectbox("📌 Select Course (Code or Name)", course_options)
-    
-    # অপশন থেকে কোড ও নাম আলাদা করা
     selected_code = selected_option.split(" - ")[0]
     selected_title = COURSES[selected_code]
-    
     st.info(f"**Course Title:**\n{selected_title}")
     st.divider()
+    
+    # অ্যাডমিন সিক্রেট পাসওয়ার্ড
+    admin_pass = st.text_input("🔒 Admin Access (For Uploading)", type="password")
     st.caption("Developed for Academic Excellence 🚀")
 
-# Main Inputs
-uploaded_files = st.file_uploader("📥 আপলোড করুন (PDF Documents)", accept_multiple_files=True, type="pdf")
+st.markdown(f"<h1 class='main-header'>🎓 {selected_code}: {selected_title}</h1>", unsafe_allow_html=True)
+
+# Admin Authorization Check
+if admin_pass == "285277":
+    st.success("Admin Verified: You can upload files")
+    uploaded_files = st.file_uploader("📥 আপলোড করুন (PDF Documents)", accept_multiple_files=True, type="pdf")
+else:
+    st.info("ℹ️ View Mode: Student Access")
+    uploaded_files = None
 
 def ask_gemini(llm, docs, question):
     context = "\n\n".join([doc.page_content for doc in docs])
@@ -131,7 +70,6 @@ def ask_gemini(llm, docs, question):
     response = llm.invoke(prompt)
     return response.content
 
-# Session State for Chat History
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -146,7 +84,6 @@ if uploaded_files and api_key:
         for page in pdf_reader.pages:
             raw_text += page.extract_text() or ""
             
-    # Display Stats
     col1, col2 = st.columns(2)
     col1.metric("📂 Uploaded Files", len(uploaded_files))
     col2.metric("📄 Total Pages Processed", total_pages)
@@ -159,7 +96,6 @@ if uploaded_files and api_key:
     tab1, tab2, tab3, tab4 = st.tabs(["💬 Interactive Chat", "📝 Smart Summary", "🎯 Exam Quiz", "📐 Formulas & Terms"])
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
 
-    # Tab 1: ChatGPT Style Interactive Chat
     with tab1:
         st.subheader("কোর্স সংক্রান্ত যেকোনো প্রশ্ন করুন")
         for message in st.session_state.messages:
@@ -178,7 +114,6 @@ if uploaded_files and api_key:
                     st.markdown(res)
                     st.session_state.messages.append({"role": "assistant", "content": res})
 
-    # Tab 2: Summary with Download Button
     with tab2:
         if st.button("Generate Course Summary"):
             with st.spinner("Creating Summary..."):
@@ -187,7 +122,6 @@ if uploaded_files and api_key:
                 st.write(summary_res)
                 st.download_button("📥 Download Summary (.txt)", data=summary_res, file_name=f"{selected_code}_Summary.txt")
 
-    # Tab 3: Quiz with Download Button
     with tab3:
         if st.button("Generate Practice Quiz"):
             with st.spinner("Generating Questions..."):
@@ -196,7 +130,6 @@ if uploaded_files and api_key:
                 st.write(quiz_res)
                 st.download_button("📥 Download Quiz (.txt)", data=quiz_res, file_name=f"{selected_code}_Quiz.txt")
 
-    # Tab 4: Formulas & Definitions
     with tab4:
         if st.button("Extract Definitions & Formulas"):
             with st.spinner("Extracting Key Terms..."):
