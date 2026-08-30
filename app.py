@@ -70,7 +70,6 @@ course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=65)
     st.title("Workspace Navigation")
-    api_key = st.text_input("🔑 Enter Gemini API Key", type="password")
     selected_option = st.selectbox("📌 Select Course", course_options)
     selected_code = selected_option.split(" - ")[0]
     selected_title = COURSES[selected_code]
