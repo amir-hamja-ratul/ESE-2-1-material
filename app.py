@@ -8,17 +8,43 @@ import os
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Perfect Light-Gray Theme CSS
+# Modern Professional UI CSS (Google Fonts & Custom Cards)
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
     .stApp { background-color: #F8F9FA; color: #1E293B !important; }
     [data-testid="stSidebar"] { background-color: #E9ECEF; }
+    
+    /* Global Text Fix */
     html, body, p, label, span, h1, h2, h3, h4, .stMarkdown { color: #1E293B !important; }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div { color: #1E293B !important; }
+    
+    /* File Uploader Style */
     [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span { color: #FFFFFF !important; }
     [data-testid="stFileUploader"] button, [data-testid="stFileUploader"] button * { color: #FFFFFF !important; fill: #FFFFFF !important; }
-    .main-header { font-size: 2.2rem; font-weight: 700; color: #4F46E5; }
-    .stButton>button { width: 100%; border-radius: 8px; font-weight: 600; }
+    
+    /* Hero Banner Styling */
+    .hero-card {
+        background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+        padding: 24px;
+        border-radius: 12px;
+        color: white !important;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .hero-card h1, .hero-card p { color: white !important; margin: 0; }
+    
+    .stButton>button {
+        border-radius: 8px;
+        font-weight: 600;
+        background-color: #4F46E5;
+        color: white;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -40,29 +66,33 @@ COURSES = {
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
-# Sidebar
+# Sidebar Workspace
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=70)
-    st.title("Semester Workspace")
+    st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=65)
+    st.title("Workspace Navigation")
     api_key = st.text_input("🔑 Enter Gemini API Key", type="password")
-    selected_option = st.selectbox("📌 Select Course (Code or Name)", course_options)
+    selected_option = st.selectbox("📌 Select Course", course_options)
     selected_code = selected_option.split(" - ")[0]
     selected_title = COURSES[selected_code]
-    st.info(f"**Course Title:**\n{selected_title}")
-    st.divider()
     
-    # অ্যাডমিন সিক্রেট পাসওয়ার্ড
+    st.divider()
     admin_pass = st.text_input("🔒 Admin Access (For Uploading)", type="password")
-    st.caption("Developed for Academic Excellence 🚀")
+    st.caption("Designed for Academic Excellence 🚀")
 
-st.markdown(f"<h1 class='main-header'>🎓 {selected_code}: {selected_title}</h1>", unsafe_allow_html=True)
+# Top Professional Hero Header
+st.markdown(f"""
+    <div class="hero-card">
+        <h1>🎓 {selected_code}: {selected_title}</h1>
+        <p>AI-Powered Workspace • Smart Summaries & Exam Prep</p>
+    </div>
+""", unsafe_allow_html=True)
 
-# Admin Authorization Check
+# Admin Mode vs Student View
 if admin_pass == "285277":
-    st.success("Admin Verified: You can upload files")
-    uploaded_files = st.file_uploader("📥 আপলোড করুন (PDF Documents)", accept_multiple_files=True, type="pdf")
+    st.success("⚡ Admin Mode Enabled: Document Upload Access Granted")
+    uploaded_files = st.file_uploader("📥 Upload Course Materials (PDF)", accept_multiple_files=True, type="pdf")
 else:
-    st.info("ℹ️ View Mode: Student Access")
+    st.info("ℹ️ Student View Mode: Access Pre-loaded Workspace Content")
     uploaded_files = None
 
 def ask_gemini(llm, docs, question):
@@ -86,24 +116,24 @@ if uploaded_files and api_key:
             raw_text += page.extract_text() or ""
             
     col1, col2 = st.columns(2)
-    col1.metric("📂 Uploaded Files", len(uploaded_files))
-    col2.metric("📄 Total Pages Processed", total_pages)
+    col1.metric("📂 Loaded Files", len(uploaded_files))
+    col2.metric("📄 Total Processed Pages", total_pages)
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = text_splitter.split_text(raw_text)
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["💬 Interactive Chat", "📝 Smart Summary", "🎯 Exam Quiz", "📐 Formulas & Terms"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
 
     with tab1:
-        st.subheader("কোর্স সংক্রান্ত যেকোনো প্রশ্ন করুন")
+        st.subheader("Ask Anything About Course Materials")
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        if user_query := st.chat_input("Ask a question about your uploaded materials..."):
+        if user_query := st.chat_input("Enter your question here..."):
             st.session_state.messages.append({"role": "user", "content": user_query})
             with st.chat_message("user"):
                 st.markdown(user_query)
@@ -116,25 +146,34 @@ if uploaded_files and api_key:
                     st.session_state.messages.append({"role": "assistant", "content": res})
 
     with tab2:
-        if st.button("Generate Course Summary"):
-            with st.spinner("Creating Summary..."):
+        if st.button("Generate Smart Summary"):
+            with st.spinner("Processing Summary..."):
                 docs = vector_store.similarity_search("Summary overview")
                 summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সংক্ষেপে বাংলা ও ইংরেজিতে সাজিয়ে দাও।")
                 st.write(summary_res)
                 st.download_button("📥 Download Summary (.txt)", data=summary_res, file_name=f"{selected_code}_Summary.txt")
 
     with tab3:
-        if st.button("Generate Practice Quiz"):
-            with st.spinner("Generating Questions..."):
+        if st.button("Generate Exam Questions"):
+            with st.spinner("Generating Quiz..."):
                 docs = vector_store.similarity_search("Important concepts")
                 quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য উপযোগী ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর তৈরি করো।")
                 st.write(quiz_res)
                 st.download_button("📥 Download Quiz (.txt)", data=quiz_res, file_name=f"{selected_code}_Quiz.txt")
 
     with tab4:
+        if st.button("Generate Study Flashcards"):
+            with st.spinner("Generating Flashcards..."):
+                docs = vector_store.similarity_search("Key concepts definitions terms")
+                flash_res = ask_gemini(llm, docs, "দ্রুত রিভিশন দেওয়ার জন্য গুরুত্বপূর্ণ ১০টি টপিকের Flashcards (Term: Definition) আকারে সুন্দর করে সাজিয়ে দাও।")
+                st.write(flash_res)
+                st.download_button("📥 Download Flashcards (.txt)", data=flash_res, file_name=f"{selected_code}_Flashcards.txt")
+
+    with tab5:
         if st.button("Extract Definitions & Formulas"):
             with st.spinner("Extracting Key Terms..."):
                 docs = vector_store.similarity_search("Definitions equations formulas")
                 formula_res = ask_gemini(llm, docs, "সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।")
                 st.write(formula_res)
                 st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
+        
