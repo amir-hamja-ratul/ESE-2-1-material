@@ -74,8 +74,8 @@ with st.sidebar:
     selected_code = selected_option.split(" - ")[0]
     selected_title = COURSES[selected_code]
     
-    st.divider()
-   query_params = st.query_params
+   st.divider()
+    query_params = st.query_params
     if query_params.get("admin") == "true":
         admin_pass = st.text_input("🔒 Secret Key", type="password")
     else:
