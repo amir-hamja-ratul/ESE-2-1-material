@@ -17,6 +17,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 COURSES = {
+    "PYQ": "Previous Year Questions",
     "ESE 2101": "Hydrology and Hydrogeology",
     "ESE 2103": "Oceanography and Limnology",
     "ESE 2105": "Ecology",
