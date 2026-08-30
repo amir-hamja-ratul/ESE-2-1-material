@@ -31,16 +31,25 @@ COURSES = {
 }
 
 # Sidebar
+# কোড এবং নাম একত্রে লিস্ট তৈরি
+course_options = [f"{code} - {title}" for code, title in COURSES.items()]
+
+# Sidebar
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=70)
     st.title("Semester Workspace")
     api_key = st.text_input("🔑 Enter Gemini API Key", type="password")
-    selected_code = st.selectbox("📌 Select Course Code", list(COURSES.keys()))
-    st.info(f"**Course Title:**\n{COURSES[selected_code]}")
+    
+    # নাম বা কোড টাইপ করে সার্চ করার ড্রপডাউন
+    selected_option = st.selectbox("📌 Select Course (Code or Name)", course_options)
+    
+    # অপশন থেকে কোড ও নাম আলাদা করা
+    selected_code = selected_option.split(" - ")[0]
+    selected_title = COURSES[selected_code]
+    
+    st.info(f"**Course Title:**\n{selected_title}")
     st.divider()
     st.caption("Developed for Academic Excellence 🚀")
-
-st.markdown(f"<h1 class='main-header'>🎓 {selected_code}: {COURSES[selected_code]}</h1>", unsafe_allow_html=True)
 
 # Main Inputs
 uploaded_files = st.file_uploader("📥 আপলোড করুন (PDF Documents)", accept_multiple_files=True, type="pdf")
