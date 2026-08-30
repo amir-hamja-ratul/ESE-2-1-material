@@ -122,9 +122,16 @@ def ask_gemini(llm, docs, question):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Fetching API Key directly from Streamlit Secrets
+# Process uploaded files
 if uploaded_files:
-    os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
+    # Set API Key securely
+    api_key = st.secrets.get("GOOGLE_API_KEY", None)
+    if not api_key:
+        st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! দয়া করে Streamlit Secrets-এ API Key যোগ করুন।")
+        st.stop()
+        
+    os.environ["GOOGLE_API_KEY"] = api_key
+
     raw_text = ""
     total_pages = 0
     
@@ -138,60 +145,67 @@ if uploaded_files:
     col1.metric("📂 Loaded Files", len(uploaded_files))
     col2.metric("📄 Total Processed Pages", total_pages)
     
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = text_splitter.split_text(raw_text)
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-    
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
+    if raw_text.strip():
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        chunks = text_splitter.split_text(raw_text)
+        
+        # Updated embedding model with direct API key parameter
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/text-embedding-004", 
+            google_api_key=api_key
+        )
+        
+        vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+        
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key, temperature=0.3)
 
-    with tab1:
-        st.subheader("Ask Anything About Course Materials")
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+        with tab1:
+            st.subheader("Ask Anything About Course Materials")
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
 
-        if user_query := st.chat_input("Enter your question here..."):
-            st.session_state.messages.append({"role": "user", "content": user_query})
-            with st.chat_message("user"):
-                st.markdown(user_query)
+            if user_query := st.chat_input("Enter your question here..."):
+                st.session_state.messages.append({"role": "user", "content": user_query})
+                with st.chat_message("user"):
+                    st.markdown(user_query)
 
-            with st.chat_message("assistant"):
-                with st.spinner("Analyzing document..."):
-                    docs = vector_store.similarity_search(user_query)
-                    res = ask_gemini(llm, docs, user_query)
-                    st.markdown(res)
-                    st.session_state.messages.append({"role": "assistant", "content": res})
+                with st.chat_message("assistant"):
+                    with st.spinner("Analyzing document..."):
+                        docs = vector_store.similarity_search(user_query)
+                        res = ask_gemini(llm, docs, user_query)
+                        st.markdown(res)
+                        st.session_state.messages.append({"role": "assistant", "content": res})
 
-    with tab2:
-        if st.button("Generate Smart Summary"):
-            with st.spinner("Processing Summary..."):
-                docs = vector_store.similarity_search("Summary overview")
-                summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সংক্ষেপে বাংলা ও ইংরেজিতে সাজিয়ে দাও।")
-                st.write(summary_res)
-                st.download_button("📥 Download Summary (.txt)", data=summary_res, file_name=f"{selected_code}_Summary.txt")
+        with tab2:
+            if st.button("Generate Smart Summary"):
+                with st.spinner("Processing Summary..."):
+                    docs = vector_store.similarity_search("Summary overview")
+                    summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সংক্ষেপে বাংলা ও ইংরেজিতে সাজিয়ে দাও।")
+                    st.write(summary_res)
+                    st.download_button("📥 Download Summary (.txt)", data=summary_res, file_name=f"{selected_code}_Summary.txt")
 
-    with tab3:
-        if st.button("Generate Exam Questions"):
-            with st.spinner("Generating Quiz..."):
-                docs = vector_store.similarity_search("Important concepts")
-                quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য উপযোগী ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর তৈরি করো।")
-                st.write(quiz_res)
-                st.download_button("📥 Download Quiz (.txt)", data=quiz_res, file_name=f"{selected_code}_Quiz.txt")
+        with tab3:
+            if st.button("Generate Exam Questions"):
+                with st.spinner("Generating Quiz..."):
+                    docs = vector_store.similarity_search("Important concepts")
+                    quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য উপযোগী ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর তৈরি করো।")
+                    st.write(quiz_res)
+                    st.download_button("📥 Download Quiz (.txt)", data=quiz_res, file_name=f"{selected_code}_Quiz.txt")
 
-    with tab4:
-        if st.button("Generate Study Flashcards"):
-            with st.spinner("Generating Flashcards..."):
-                docs = vector_store.similarity_search("Key concepts definitions terms")
-                flash_res = ask_gemini(llm, docs, "দ্রুত রিভিশন দেওয়ার জন্য গুরুত্বপূর্ণ ১০টি টপিকের Flashcards (Term: Definition) আকারে সুন্দর করে সাজিয়ে দাও।")
-                st.write(flash_res)
-                st.download_button("📥 Download Flashcards (.txt)", data=flash_res, file_name=f"{selected_code}_Flashcards.txt")
+        with tab4:
+            if st.button("Generate Study Flashcards"):
+                with st.spinner("Generating Flashcards..."):
+                    docs = vector_store.similarity_search("Key concepts definitions terms")
+                    flash_res = ask_gemini(llm, docs, "দ্রুত রিভিশন দেওয়ার জন্য গুরুত্বপূর্ণ ১০টি টপিকের Flashcards (Term: Definition) আকারে সুন্দর করে সাজিয়ে দাও।")
+                    st.write(flash_res)
+                    st.download_button("📥 Download Flashcards (.txt)", data=flash_res, file_name=f"{selected_code}_Flashcards.txt")
 
-    with tab5:
-        if st.button("Extract Definitions & Formulas"):
-            with st.spinner("Extracting Key Terms..."):
-                docs = vector_store.similarity_search("Definitions equations formulas")
-                formula_res = ask_gemini(llm, docs, "সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।")
-                st.write(formula_res)
-                st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
+        with tab5:
+            if st.button("Extract Definitions & Formulas"):
+                with st.spinner("Extracting Key Terms..."):
+                    docs = vector_store.similarity_search("Definitions equations formulas")
+                    formula_res = ask_gemini(llm, docs, "সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।")
+                    st.write(formula_res)
+                    st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
