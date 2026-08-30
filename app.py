@@ -3,7 +3,6 @@ from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain.chains.question_answering import load_qa_chain
 import os
 
 st.set_page_config(page_title="EduHub - 2nd Year 1st Sem", page_icon="🎓", layout="wide")
@@ -32,6 +31,12 @@ with st.sidebar:
 st.title(f"🎓 {selected_code}: {COURSES[selected_code]}")
 uploaded_files = st.file_uploader("📥 আপলোড করুন (PDF Documents)", accept_multiple_files=True, type="pdf")
 
+def ask_gemini(llm, docs, question):
+    context = "\n\n".join([doc.page_content for doc in docs])
+    prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
+    response = llm.invoke(prompt)
+    return response.content
+
 if uploaded_files and api_key:
     os.environ["GOOGLE_API_KEY"] = api_key
     raw_text = ""
@@ -47,25 +52,24 @@ if uploaded_files and api_key:
     
     tab1, tab2, tab3, tab4 = st.tabs(["💬 AI Chat", "📝 Summary", "🎯 Quiz", "📐 Formulas"])
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
-    chain = load_qa_chain(llm, chain_type="stuff")
 
     with tab1:
         user_query = st.text_input("প্রশ্ন লিখুন:")
         if user_query:
             docs = vector_store.similarity_search(user_query)
-            st.write(chain.run(input_documents=docs, question=user_query))
+            st.write(ask_gemini(llm, docs, user_query))
 
     with tab2:
         if st.button("Generate Summary"):
             docs = vector_store.similarity_search("Summary overview")
-            st.write(chain.run(input_documents=docs, question="মূল বিষয়বস্তু পয়েন্ট আকারে সংক্ষেপে বাংলা ও ইংরেজিতে সাজিয়ে দাও।"))
+            st.write(ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সংক্ষেপে বাংলা ও ইংরেজিতে সাজিয়ে দাও।"))
 
     with tab3:
         if st.button("Generate Quiz"):
             docs = vector_store.similarity_search("Important concepts")
-            st.write(chain.run(input_documents=docs, question="পরীক্ষার জন্য উপযোগী ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর তৈরি করো।"))
+            st.write(ask_gemini(llm, docs, "পরীক্ষার জন্য উপযোগী ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর তৈরি করো।"))
 
     with tab4:
         if st.button("Extract Formulas & Terms"):
             docs = vector_store.similarity_search("Definitions equations formulas")
-            st.write(chain.run(input_documents=docs, question="সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।"))
+            st.write(ask_gemini(llm, docs, "সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।"))
