@@ -10,6 +10,16 @@ st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓"
 # White-Gray Theme Custom CSS
 st.markdown("""
     <style>
+    /* ফাইল আপলোড বাটনের টেক্সট ও আইকন সাদা করার জন্য */
+    [data-testid="stFileUploader"] button,
+    [data-testid="stFileUploader"] button * {
+        color: #FFFFFF !important;
+        fill: #FFFFFF !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+st.markdown("""
+    <style>
     /* আপলোড বক্সের ভেতরের সাব-টেক্সট সাদা করার জন্য */
     [data-testid="stFileUploader"] small, 
     [data-testid="stFileUploader"] span {
