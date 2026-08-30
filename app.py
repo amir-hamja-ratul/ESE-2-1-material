@@ -44,7 +44,7 @@ st.markdown("""
         padding: 24px;
         border-radius: 12px;
         color: white !important;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .hero-card h1, .hero-card p { color: white !important; margin: 0; }
@@ -57,6 +57,9 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Top Department Header
+st.markdown("<h3 style='text-align: center; color: #1E293B; margin-bottom: 20px;'>🌱 Department of Environmental Science and Engineering</h3>", unsafe_allow_html=True)
 
 # ESE Department Courses & Resources List
 COURSES = {
@@ -96,8 +99,16 @@ with st.sidebar:
         admin_pass = ""
         
     st.caption("Designed for Academic Excellence 🚀")
+    
+    # Bottom Left ESE Info Card
+    st.markdown("""
+        <div style="background-color: #FFFFFF; padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; text-align: center;">
+            <p style="margin: 0; font-size: 0.85rem; font-weight: 600; color: #059669 !important;">🌍 Green Tech & Data Hub</p>
+            <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: #64748B !important;">GIS • EIA • Sustainability • Lab Resources</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-# Top Professional Hero Header
+# Top Hero Header
 st.markdown(f"""
     <div class="hero-card">
         <h1>🎓 {selected_code}: {selected_title}</h1>
@@ -195,3 +206,31 @@ if uploaded_files:
                 formula_res = ask_gemini(llm, docs, "সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।")
                 st.write(formula_res)
                 st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
+
+# Bottom Right/Main Department Feature Cards
+st.divider()
+col_left, col_right = st.columns(2)
+
+with col_left:
+    st.markdown("""
+        <div style="background-color: #ECFDF5; padding: 16px; border-radius: 10px; border-left: 4px solid #10B981;">
+            <h4 style="margin: 0; color: #065F46 !important;">🔬 Core ESE Focus Areas</h4>
+            <p style="margin-top: 5px; font-size: 0.9rem; color: #047857 !important;">
+                • Hydrology & Water Management<br>
+                • GIS & Remote Sensing Analytics<br>
+                • Environmental Microbiology & Ecology
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+with col_right:
+    st.markdown("""
+        <div style="background-color: #EEF2FF; padding: 16px; border-radius: 10px; border-left: 4px solid #6366F1;">
+            <h4 style="margin: 0; color: #3730A3 !important;">📊 Tech Stack Tools</h4>
+            <p style="margin-top: 5px; font-size: 0.9rem; color: #4338CA !important;">
+                • Python for Environmental Data<br>
+                • AutoCAD Engineering Designs<br>
+                • Statistical Environmental Modeling
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
