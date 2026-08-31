@@ -397,49 +397,58 @@ else:
 with tab6:
     import pandas as pd
 
-    data = {
-        "Student Name": [
-            "Farjana Akter Mitu", "Mohosina Nowsin", "Amir Hamja Ratul", "Nazifa Sultana", 
-            "Elma", "Md. Saidur Rahman Said", "Mst. Farhana Islam Borsha", "Md. Kawser Mahmud", 
-            "Sadia Afrin Promi", "Junaid Hasan Provat", "Sirazum Monira", "Shad Eveny Ahmed Showrav", 
-            "Md. Mahadi Hasan", "Mursalin Al Ifti", "Raduyan Hosen", "Sania Akter", 
-            "Hridoy Mia", "Md. Abu Saim", "Md. Yousuf Ali", "Muntahara Salsabil Labiba", 
-            "Mahdi Hasan Maruf", "Mst. Ratna Akter", "Mst. Khadija Akter", "Borsha Akter", 
-            "Umme Salma Sadia", "Fariha Tasnuba"
-        ],
-        "CGPA": [
-            3.95, 3.91, 3.88, 3.85, 3.82, 3.79, 3.75, 3.72, 3.69, 3.65,
-            3.62, 3.58, 3.55, 3.50, 3.47, 3.43, 3.40, 3.35, 3.31, 3.27,
-            3.22, 3.18, 3.14, 3.09, 3.05, 3.00
-        ],
-        "Total Marks": [
-            910, 895, 882, 870, 858, 845, 832, 820, 808, 795,
-            782, 770, 758, 745, 733, 720, 708, 695, 682, 670,
-            658, 645, 632, 620, 608, 595
-        ]
-    }
+    st.markdown("### 📊 Department of Environmental Science and Engineering")
+    st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
+    st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
 
-    df = pd.DataFrame(data)
+    # কোর্স নির্বাচনের অপশন
+ courses = [
+    "ESE 2101: Hydrology and Hydrogeology",
+    "ESE 2103: Oceanography and Limnology",
+    "ESE 2105: Ecology",
+    "ESE 2102: Ecology - Lab",
+    "ESE 2107: Environmental Microbiology",
+    "ESE 2104: Environmental Microbiology - Lab",
+    "ESE 2109: Survey and Settlement",
+    "ESE 2106: Survey and Settlement - Lab",
+    "ESE 2111: Soil Mechanics",
+    "ESE 2108: Engineering Drawing Lab",
+    "ESE 2113: Statistics for Environment",
+    "PYQ: Previous Year Questions",
+    "MEQ: Mid Exam Questions"
+]
+    
+    selected_course = st.selectbox("📚 কোর্স সিলেক্ট করুন:", courses, key="internal_course_select")
 
-    st.markdown("### 🏆 ESE-10 Batch Dynamic Leaderboard")
-    st.markdown("আপনার পছন্দ অনুযায়ী **CGPA** অথবা **Total Marks** ফিল্টার করে র‍্যাংক দেখতে পারবেন।")
-
-    sort_choice = st.radio(
-        "📊 র‍্যাংকিং ক্রাইটেরিয়া নির্বাচন করুন:", 
-        ["CGPA", "Total Marks"], 
-        horizontal=True,
-        key="leaderboard_sort"
-    )
-
-    if sort_choice == "CGPA":
-        df_sorted = df.sort_values(by="CGPA", ascending=False).reset_index(drop=True)
+    # ESE 1207 কোর্সের অফিশিয়াল মার্কশিট ডেটা
+    if selected_course == "ESE 1207: Mathematics-II":
+        data = {
+            "Roll": [
+                "25103402", "25103405", "25103406", "25103409", "25103413", "25103413", 
+                "25103414", "25103415", "25103416", "25103417", "25103420", "25103421", 
+                "25103422", "25103423", "25103427", "25103429", "25103430", "25103431", 
+                "25103433", "25103434", "25103435", "25103436", "25103437", "25103438", 
+                "25103440", "24103403", "24103423"
+            ],
+            "Name of Students": [
+                "FARJANA AKTER MITU", "MOHSINA KHAN", "NOSHIN", "AMIR HAMZA RATUL", "NAZIFA SULTANA", "ELMA", 
+                "MD. SAIDUR RAHMAN SAID", "MST. FARHANA ISLAM BORSHA", "MD. KAWSER MAHMUD", "SADIA AFRIN PROMI", "JUNAID HASSAN PROVAT", "SIRAZUM MONIRA", 
+                "SHAD EVENY AHMED SHOWRAV", "MD. MAHADI HASAN", "MURSALIN AL IFTI", "RADUYAN HOSEN", "SANIA AKTER", "HRIDOY MIA", 
+                "MD. ABU SAIM", "MD. YOUSUF ALI", "MUTAHARA SALSABIL LABIBA", "MAHDI HASAN MARUF", "MST. RATNA AKTER", "MST. KHADILA AKTER", 
+                "BORSHA AKTER", "UMME SALMA SADIA", "FARIHA TASNUBA"
+            ],
+            "Attendance (10)": [10, 7, 9, 9, 10, 9, 10, 10, 10, 10, 9, 9, 9, 9, 8, 10, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+            "Mid-1 (10)": [10, 8, 10, 10, 10, 9, 9, 10, 8, 8, 10, 10, 9, 10, 10, 10, 10, 8, 10, 10, 10, 9, 9, 10, 10, 10, 10],
+            "Mid-2 (10)": [8, 8, 9, 9, 9, 9, 10, 10, 9, 9, 9, 10, 10, 9, 7, 9, 7, 10, 10, 10, 10, 8, 10, 9, 9, 7, 10],
+            "Mid-3 (10)": [9, 9, 6, 6, 7, 6, 8, 6, 6, 7, 6, 7, 7, 8, 5, 9, 10, 8, 6, 8, 10, 6, 8, 9, 10, 10, 7],
+            "Total Marks (40)": [37, 32, 34, 34, 36, 33, 37, 36, 33, 34, 34, 36, 35, 36, 30, 38, 36, 35, 36, 38, 40, 33, 37, 38, 39, 37, 37]
+        }
+        df_internal = pd.DataFrame(data)
+        
+        st.dataframe(
+            df_internal,
+            use_container_width=True,
+            hide_index=True
+        )
     else:
-        df_sorted = df.sort_values(by="Total Marks", ascending=False).reset_index(drop=True)
-
-    df_sorted.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_sorted) + 1)])
-
-    st.dataframe(
-        df_sorted,
-        use_container_width=True,
-        hide_index=True
-    )
+        st.info(f"📌 **{selected_course}** কোর্সের ইন্টারনাল মার্কশিট শিঘ্রই যুক্ত করা হবে।")
