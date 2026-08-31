@@ -6,3 +6,5 @@ langchain-google-genai
 langchain-huggingface
 sentence-transformers
 faiss-cpu
+PyMuPDF
+Pillow
