@@ -399,11 +399,13 @@ with tab6:
 
     data = {
         "Student Name": [
-            "Student 1", "Student 2", "Student 3", "Student 4", "Student 5",
-            "Student 6", "Student 7", "Student 8", "Student 9", "Student 10",
-            "Student 11", "Student 12", "Student 13", "Student 14", "Student 15",
-            "Student 16", "Student 17", "Student 18", "Student 19", "Student 20",
-            "Student 21", "Student 22", "Student 23", "Student 24", "Student 25", "Student 26"
+            "Farjana Akter Mitu", "Mohosina Nowsin", "Amir Hamja Ratul", "Nazifa Sultana", 
+            "Elma", "Md. Saidur Rahman Said", "Mst. Farhana Islam Borsha", "Md. Kawser Mahmud", 
+            "Sadia Afrin Promi", "Junaid Hasan Provat", "Sirazum Monira", "Shad Eveny Ahmed Showrav", 
+            "Md. Mahadi Hasan", "Mursalin Al Ifti", "Raduyan Hosen", "Sania Akter", 
+            "Hridoy Mia", "Md. Abu Saim", "Md. Yousuf Ali", "Muntahara Salsabil Labiba", 
+            "Mahdi Hasan Maruf", "Mst. Ratna Akter", "Mst. Khadija Akter", "Borsha Akter", 
+            "Umme Salma Sadia", "Fariha Tasnuba"
         ],
         "CGPA": [
             3.95, 3.91, 3.88, 3.85, 3.82, 3.79, 3.75, 3.72, 3.69, 3.65,
