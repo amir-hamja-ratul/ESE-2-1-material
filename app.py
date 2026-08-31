@@ -197,6 +197,20 @@ with st.sidebar:
             <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
         </div>
     """, unsafe_allow_html=True)
+    /* Custom style for Sidebar Collapse/Expand Button */
+    [data-testid="collapsedControl"] {
+        background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
+        color: #FFFFFF !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3) !important;
+        margin: 10px 0 0 10px !important;
+        padding: 4px !important;
+    }
+    
+    /* Change arrow/icon color inside the button */
+    [data-testid="collapsedControl"] svg {
+        fill: #FFFFFF !important;
+    }
     
     # Centered Title
     st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 20px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
