@@ -393,8 +393,31 @@ if raw_text.strip():
                 st.markdown(formula_res)
 else:
     st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো ডকুমেন্ট লোড করা নেই।")
+    
     with tab6:
-       import pandas as pd
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        import pandas as pd
 
 # ডেটা ডিকশনারি ডিফাইন করা
 data = {
@@ -425,7 +448,8 @@ st.markdown("আপনার পছন্দ অনুযায়ী **CGPA** অ�
 sort_choice = st.radio(
     "📊 র‍্যাংকিং ক্রাইটেরিয়া নির্বাচন করুন:", 
     ["CGPA", "Total Marks"], 
-    horizontal=True
+    horizontal=True,
+    key="leaderboard_sort"
 )
 
 if sort_choice == "CGPA":
