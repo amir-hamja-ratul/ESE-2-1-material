@@ -13,7 +13,7 @@ import io
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Advanced Professional CSS
+# Fixed Contrast & Visible Text CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -21,46 +21,53 @@ st.markdown("""
     html, body, [class*="css"] { 
         font-family: 'Plus Jakarta Sans', sans-serif; 
     }
+    
+    /* Force Light Background */
     .stApp { 
-        background-color: #F8FAFC; 
-        color: #0F172A !important; 
+        background-color: #F8FAFC !important; 
     }
     
-    /* Sidebar Styling */
+    /* Force Visible Text Colors Across App */
+    h1, h2, h3, h4, h5, h6, p, label, span, div, .stMarkdown {
+        color: #0F172A !important;
+    }
+    
+    /* Sidebar Text & Background Fix */
     [data-testid="stSidebar"] { 
-        background-color: #FFFFFF; 
-        border-right: 1px solid #E2E8F0;
+        background-color: #FFFFFF !important; 
+        border-right: 1px solid #E2E8F0 !important;
+    }
+    [data-testid="stSidebar"] * {
+        color: #0F172A !important;
     }
     
-    /* Top Header Styling */
+    /* Header Styling Fix */
     .header-container {
         text-align: center;
         padding: 10px 0 20px 0;
     }
     .dept-title {
-        color: #0F172A;
+        color: #0F172A !important;
         font-size: 1.8rem;
         font-weight: 700;
-        letter-spacing: -0.02em;
         margin-bottom: 6px;
     }
     .sem-badge {
         display: inline-block;
-        background-color: #EEF2FF;
-        color: #4F46E5;
+        background-color: #EEF2FF !important;
+        color: #4F46E5 !important;
         font-weight: 600;
         font-size: 0.9rem;
         padding: 4px 16px;
         border-radius: 20px;
-        border: 1px solid #C7D2FE;
+        border: 1px solid #C7D2FE !important;
     }
     
-    /* Hero Banner */
+    /* Hero Banner Fix */
     .hero-card {
-        background: linear-gradient(135deg, #1E1B4B 0%, #4338CA 100%);
+        background: linear-gradient(135deg, #1E1B4B 0%, #4338CA 100%) !important;
         padding: 28px 32px;
         border-radius: 16px;
-        color: white !important;
         margin-bottom: 24px;
         box-shadow: 0 10px 15px -3px rgba(67, 56, 202, 0.2);
     }
@@ -71,60 +78,46 @@ st.markdown("""
         font-weight: 700;
     }
     
-    /* Custom Metric Cards */
+    /* Metric Cards Text Fix */
     .metric-card {
-        background: #FFFFFF;
+        background: #FFFFFF !important;
         padding: 16px 20px;
         border-radius: 12px;
-        border: 1px solid #E2E8F0;
+        border: 1px solid #E2E8F0 !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         text-align: center;
     }
     .metric-value {
         font-size: 1.8rem;
         font-weight: 700;
-        color: #4F46E5;
+        color: #4F46E5 !important;
     }
     .metric-label {
         font-size: 0.85rem;
-        color: #64748B;
+        color: #64748B !important;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
     }
 
-    /* Buttons */
+    /* Buttons Fix */
     .stButton>button, [data-testid="stDownloadButton"]>button {
         border-radius: 8px !important;
         font-weight: 600 !important;
         background-color: #4F46E5 !important;
         color: #FFFFFF !important;
         border: none !important;
-        padding: 8px 16px !important;
-        transition: all 0.2s ease;
-    }
-    .stButton>button:hover, [data-testid="stDownloadButton"]>button:hover {
-        background-color: #4338CA !important;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
     }
     
-    /* Tabs Customization */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        border-bottom: 2px solid #E2E8F0;
-    }
+    /* Tabs Text Fix */
     .stTabs [data-baseweb="tab"] {
-        border-radius: 6px 6px 0 0;
-        padding: 8px 16px;
+        color: #475569 !important;
         font-weight: 600;
-        color: #64748B;
     }
     .stTabs [aria-selected="true"] {
         color: #4F46E5 !important;
     }
     </style>
 """, unsafe_allow_html=True)
-
 # Top Department Header
 st.markdown("""
     <div class="header-container">
