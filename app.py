@@ -394,10 +394,9 @@ if raw_text.strip():
 else:
     st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো ডকুমেন্ট লোড করা নেই।")
     with tab6:
-        import pandas as pd
-import streamlit as st
+       import pandas as pd
 
-# 26 জনের প্রাথমিক ডেটা ফ্রেম
+# ডেটা ডিকশনারি ডিফাইন করা
 data = {
     "Student Name": [
         "Student 1", "Student 2", "Student 3", "Student 4", "Student 5",
@@ -423,23 +422,19 @@ df = pd.DataFrame(data)
 st.markdown("### 🏆 ESE-10 Batch Dynamic Leaderboard")
 st.markdown("আপনার পছন্দ অনুযায়ী **CGPA** অথবা **Total Marks** ফিল্টার করে র‍্যাংক দেখতে পারবেন।")
 
-# ব্যবহারকারী যেটির ভিত্তিতে র‍্যাংক দেখতে চান তা সিলেক্ট করার অপশন
 sort_choice = st.radio(
     "📊 র‍্যাংকিং ক্রাইটেরিয়া নির্বাচন করুন:", 
     ["CGPA", "Total Marks"], 
     horizontal=True
 )
 
-# সিলেক্ট করা অপশন অনুযায়ী স্বয়ংক্রিয়ভাবে ডেটা সর্ট করা
 if sort_choice == "CGPA":
     df_sorted = df.sort_values(by="CGPA", ascending=False).reset_index(drop=True)
 else:
     df_sorted = df.sort_values(by="Total Marks", ascending=False).reset_index(drop=True)
 
-# ডাইনামিক র‍্যাংক কলাম যুক্ত করা
 df_sorted.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_sorted) + 1)])
 
-# সুন্দর টেবিল আকারে প্রদর্শন
 st.dataframe(
     df_sorted,
     use_container_width=True,
