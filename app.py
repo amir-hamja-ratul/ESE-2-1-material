@@ -211,7 +211,7 @@ with st.sidebar:
     admin_pass = st.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
     
     # Centered Footer Caption
-    st.markdown("<p style='text-align: center; color: #64748B; font-size: 0.8rem; margin-top: 20px;'>Designed for JKKNIU ESE Dept.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #64748B; font-size: 0.8rem; margin-top: 20px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
 
 # Course Title Banner
 st.markdown(f"""
