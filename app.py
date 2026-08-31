@@ -9,7 +9,7 @@ import os
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Modern Light Theme CSS & Sidebar Toggle Arrow Fix
+# Modern Light Theme CSS & Dark Block Text Color Fix
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -24,6 +24,11 @@ st.markdown("""
     /* Text Color Fixes */
     html, body, p, label, span, h1, h2, h3, h4, .stMarkdown { color: #1E293B !important; }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div { color: #1E293B !important; }
+    
+    /* Dark Code Block / JSON View Text Color Fix */
+    pre, code, [data-testid="stJson"] * {
+        color: #FFFFFF !important;
+    }
     
     /* Header & Sidebar Collapse Arrow Color Fix */
     [data-testid="stHeader"] {
@@ -123,7 +128,15 @@ def ask_gemini(llm, docs, question):
     context = "\n\n".join([doc.page_content for doc in docs])
     prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
     response = llm.invoke(prompt)
-    return response.content
+    
+    # Ensure plain text extraction
+    if hasattr(response, 'content'):
+        if isinstance(response.content, str):
+            return response.content
+        elif isinstance(response.content, list):
+            text_parts = [item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content]
+            return "".join(text_parts)
+    return str(response)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -160,7 +173,6 @@ if uploaded_files:
         
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
         
-        # Updated model identifier compatible with all AI Studio keys
         llm = ChatGoogleGenerativeAI(
             model="gemini-3.6-flash",
             google_api_key=api_key,
@@ -190,7 +202,7 @@ if uploaded_files:
                 with st.spinner("Processing Summary..."):
                     docs = vector_store.similarity_search("Summary overview")
                     summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সংক্ষেপে বাংলা ও ইংরেজিতে সাজিয়ে দাও।")
-                    st.write(summary_res)
+                    st.markdown(summary_res)
                     st.download_button("📥 Download Summary (.txt)", data=summary_res, file_name=f"{selected_code}_Summary.txt")
 
         with tab3:
@@ -198,7 +210,7 @@ if uploaded_files:
                 with st.spinner("Generating Quiz..."):
                     docs = vector_store.similarity_search("Important concepts")
                     quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য উপযোগী ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর তৈরি করো।")
-                    st.write(quiz_res)
+                    st.markdown(quiz_res)
                     st.download_button("📥 Download Quiz (.txt)", data=quiz_res, file_name=f"{selected_code}_Quiz.txt")
 
         with tab4:
@@ -206,7 +218,7 @@ if uploaded_files:
                 with st.spinner("Generating Flashcards..."):
                     docs = vector_store.similarity_search("Key concepts definitions terms")
                     flash_res = ask_gemini(llm, docs, "দ্রুত রিভিশন দেওয়ার জন্য গুরুত্বপূর্ণ ১০টি টপিকের Flashcards (Term: Definition) আকারে সুন্দর করে সাজিয়ে দাও।")
-                    st.write(flash_res)
+                    st.markdown(flash_res)
                     st.download_button("📥 Download Flashcards (.txt)", data=flash_res, file_name=f"{selected_code}_Flashcards.txt")
 
         with tab5:
@@ -214,5 +226,5 @@ if uploaded_files:
                 with st.spinner("Extracting Key Terms..."):
                     docs = vector_store.similarity_search("Definitions equations formulas")
                     formula_res = ask_gemini(llm, docs, "সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।")
-                    st.write(formula_res)
+                    st.markdown(formula_res)
                     st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
