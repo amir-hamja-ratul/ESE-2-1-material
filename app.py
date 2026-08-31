@@ -6,7 +6,9 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 import glob
-import base64
+import fitz  # PyMuPDF
+from PIL import Image
+import io
 
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
@@ -47,9 +49,10 @@ st.markdown("""
 st.markdown("""
     <div style='text-align: center; margin-bottom: 24px;'>
         <h2 style='color: #1E293B; font-size: 1.8rem; font-weight: 700; margin-bottom: 4px;'>🌱 Department of Environmental Science and Engineering</h2>
-        <p style='color: #4F46E5 !weight: 600; font-size: 1.1rem; margin: 0;'>📚 2nd Year 1st Semester</p>
+        <p style='color: #4F46E5; font-weight: 600; font-size: 1.1rem; margin: 0;'>📚 2nd Year 1st Semester</p>
     </div>
 """, unsafe_allow_html=True)
+
 COURSES = {
     "ESE 2101": "Hydrology and Hydrogeology",
     "ESE 2103": "Oceanography and Limnology",
@@ -104,12 +107,19 @@ def ask_gemini(llm, docs, question):
             return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
     return str(response)
 
-# Helper function to embed PDF Viewer
+# Helper function to display PDF pages as images (100% Reliable)
 def display_pdf(file_path):
-    with open(file_path, "rb") as f:
-        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf"></iframe>'
-    st.markdown(pdf_display, unsafe_allow_html=True)
+    doc = fitz.open(file_path)
+    st.write(f"📖 **Total Pages:** {len(doc)}")
+    
+    # Iterate through pages and display as images
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        pix = page.get_pixmap(dpi=150)  # High quality rendering
+        img_bytes = pix.tobytes("png")
+        image = Image.open(io.BytesIO(img_bytes))
+        
+        st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -156,7 +166,7 @@ if raw_text.strip():
         embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     
-    # Updated Tabs with PDF Viewer Tab
+    # Tabs with Image-based PDF Viewer
     tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(["📖 View & Download PDF", "💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
     
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
@@ -175,7 +185,7 @@ if raw_text.strip():
                     mime="application/pdf"
                 )
             
-            # Inline Embedded PDF Reader
+            # Render PDF pages cleanly as images
             st.markdown("---")
             display_pdf(selected_pdf)
 
