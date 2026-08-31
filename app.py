@@ -393,10 +393,10 @@ if raw_text.strip():
                 st.markdown(formula_res)
 else:
     st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো ডকুমেন্ট লোড করা নেই।")
-   with tab6:
+
+with tab6:
     import pandas as pd
 
-    # ডেটা ডিকশনারি ডিফাইন করা
     data = {
         "Student Name": [
             "Student 1", "Student 2", "Student 3", "Student 4", "Student 5",
