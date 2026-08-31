@@ -185,19 +185,21 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions",
-    "GIS": "GIS & Remote Sensing Resources",
-    "EIA": "EIA & Environmental Law",
-    "LAB": "Lab Manuals & Protocols",
-    "FIELD": "Field Work Reports & Data",
-    "STD": "Environmental Standards & Guidelines"
+    "MEQ": "Mid Exam Questions"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=70)
-    st.markdown("### Workspace Navigation")
+    # Centered Logo using HTML/CSS
+    st.markdown("""
+        <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Centered Title
+    st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 20px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
     
     selected_option = st.selectbox("📌 Select Course Material", course_options)
     selected_code = selected_option.split(" - ")[0]
@@ -207,7 +209,9 @@ with st.sidebar:
     
     query_params = st.query_params
     admin_pass = st.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
-    st.caption("Designed for JKKNIU ESE Dept.")
+    
+    # Centered Footer Caption
+    st.markdown("<p style='text-align: center; color: #64748B; font-size: 0.8rem; margin-top: 20px;'>Designed for JKKNIU ESE Dept.</p>", unsafe_allow_html=True)
 
 # Course Title Banner
 st.markdown(f"""
