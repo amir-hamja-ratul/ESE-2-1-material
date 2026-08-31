@@ -393,7 +393,6 @@ if raw_text.strip():
                 st.markdown(formula_res)
 else:
     st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো ডকুমেন্ট লোড করা নেই।")
-    
    with tab6:
     import pandas as pd
 
