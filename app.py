@@ -6,6 +6,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 import glob
+import base64
 
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
@@ -43,8 +44,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Top Department Header
-st.markdown("<h2 style='text-align: center; color: #1E293B; font-size: 1.8rem; font-weight: 700; margin-bottom: 24px;'>🌱 Department of Environmental Science and Engineering</h2>", unsafe_allow_html=True)
-
+st.markdown("""
+    <div style='text-align: center; margin-bottom: 24px;'>
+        <h2 style='color: #1E293B; font-size: 1.8rem; font-weight: 700; margin-bottom: 4px;'>🌱 Department of Environmental Science and Engineering</h2>
+        <p style='color: #4F46E5 !weight: 600; font-size: 1.1rem; margin: 0;'>📚 2nd Year 1st Semester</p>
+    </div>
+""", unsafe_allow_html=True)
 COURSES = {
     "ESE 2101": "Hydrology and Hydrogeology",
     "ESE 2103": "Oceanography and Limnology",
@@ -58,7 +63,7 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions",
+    "MEQ": "Mid Exam Questions"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -99,6 +104,13 @@ def ask_gemini(llm, docs, question):
             return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
     return str(response)
 
+# Helper function to embed PDF Viewer
+def display_pdf(file_path):
+    with open(file_path, "rb") as f:
+        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf"></iframe>'
+    st.markdown(pdf_display, unsafe_allow_html=True)
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -137,13 +149,6 @@ if raw_text.strip():
     col1.metric("📂 Loaded Files", files_count)
     col2.metric("📄 Total Processed Pages", total_pages)
 
-    if local_pdfs and not uploaded_files:
-        st.subheader("📥 Download Available Resources")
-        for pdf_file in local_pdfs:
-            with open(pdf_file, "rb") as f:
-                file_name = os.path.basename(pdf_file)
-                st.download_button(label=f"📄 Download {file_name}", data=f, file_name=file_name, mime="application/pdf")
-
     with st.spinner("Processing PDF contents..."):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         chunks = text_splitter.split_text(raw_text)
@@ -151,9 +156,28 @@ if raw_text.strip():
         embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
+    # Updated Tabs with PDF Viewer Tab
+    tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(["📖 View & Download PDF", "💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
     
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
+
+    with tab0:
+        st.subheader("📄 Course Documents Viewer")
+        if local_pdfs:
+            selected_pdf = st.selectbox("Select PDF to view:", local_pdfs, format_func=lambda x: os.path.basename(x))
+            
+            # Download Button
+            with open(selected_pdf, "rb") as f:
+                st.download_button(
+                    label=f"📥 Download {os.path.basename(selected_pdf)}",
+                    data=f,
+                    file_name=os.path.basename(selected_pdf),
+                    mime="application/pdf"
+                )
+            
+            # Inline Embedded PDF Reader
+            st.markdown("---")
+            display_pdf(selected_pdf)
 
     with tab1:
         st.subheader("Ask Anything About Course Materials")
