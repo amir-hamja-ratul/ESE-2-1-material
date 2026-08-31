@@ -378,4 +378,4 @@ if raw_text.strip():
                 formula_res = ask_gemini(llm, docs, "গুরুত্বপূর্ণ সংজ্ঞা ও গাণিতিক সূত্রগুলো সহজ ইংরেজিতে লেখো এবং বাংলা অর্থ যুক্ত করো।")
                 st.markdown(formula_res)
 else:
-    st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো ডকুমেন্ট লোড করা নেই। অ্যাডমিন প্যানেল থেকে ফাইল আপলোড করুন অথবা 'data/{folder_code}' ফোল্ডারে PDF রাখুন।")
+    st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো ডকুমেন্ট লোড করা নেই।")
