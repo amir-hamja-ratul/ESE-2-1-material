@@ -161,6 +161,20 @@ st.markdown("""
         transform: translateY(-2px) scale(1.02) !important;
         box-shadow: 0 8px 15px rgba(16, 185, 129, 0.4) !important;
     }
+
+    /* Custom style for Sidebar Collapse/Expand Menu Button */
+    [data-testid="collapsedControl"] {
+        background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
+        color: #FFFFFF !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3) !important;
+        margin: 10px 0 0 10px !important;
+        padding: 4px !important;
+    }
+    
+    [data-testid="collapsedControl"] svg {
+        fill: #FFFFFF !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -193,28 +207,10 @@ course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 with st.sidebar:
     # Centered Logo using HTML/CSS
     st.markdown("""
-        <div style="display: flex; justify-content: center; margin-bottom: 10px;"/* Custom style for Sidebar Collapse/Expand Button */
-    [data-testid="collapsedControl"] {
-        background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
-        color: #FFFFFF !important;
-        border-radius: 10px !important;
-        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3) !important;
-        margin: 10px 0 0 10px !important;
-        padding: 4px !important;
-    }
-    
-    [data-testid="collapsedControl"] svg {
-        fill: #FFFFFF !important;
-    }
-</style>>
+        <div style="display: flex; justify-content: center; margin-bottom: 10px;">
             <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
         </div>
-  
-    
-    /* Change arrow/icon color inside the button */
-    [data-testid="collapsedControl"] svg {
-        fill: #FFFFFF !important;
-    }
+    """, unsafe_allow_html=True)
     
     # Centered Title
     st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 20px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
@@ -272,7 +268,7 @@ if "messages" not in st.session_state:
 
 api_key = st.secrets.get("GOOGLE_API_KEY", None)
 if not api_key:
-    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets-এ যোগ করুন।")
+    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets-এ যোগ করুন।")
     st.stop()
 os.environ["GOOGLE_API_KEY"] = api_key
 
@@ -327,7 +323,7 @@ if raw_text.strip():
     
     tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(["📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas"])
     
-    llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", google_api_key=api_key, temperature=0.3)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
 
     with tab0:
         st.markdown("### 📄 Course Documents Viewer")
@@ -369,7 +365,7 @@ if raw_text.strip():
         if st.button("✨ Generate Smart Summary"):
             with st.spinner("Analyzing and summarizing..."):
                 docs = vector_store.similarity_search("Summary overview main points")
-                summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
+                summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
                 st.markdown(summary_res)
 
     with tab3:
