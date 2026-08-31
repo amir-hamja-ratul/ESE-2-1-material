@@ -105,7 +105,12 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions"
+    "MEQ": "Mid Exam Questions",
+    "GIS": "GIS & Remote Sensing Resources",
+    "EIA": "EIA & Environmental Law",
+    "LAB": "Lab Manuals & Protocols",
+    "FIELD": "Field Work Reports & Data",
+    "STD": "Environmental Standards & Guidelines"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -204,6 +209,7 @@ if uploaded_files:
                     st.markdown(message["content"])
 
             if user_query := st.chat_input("Enter your question here..."):
+                prompt_with_bilingual = f"{user_query}\n\n[অর্ডার: উত্তরটি প্রথমে সহজ ইংরেজিতে (Easy English) দেবে এবং সাথে সাথেই তার বাংলা অনুবাদ (Bangla Translation) নিচে যুক্ত করবে।]"
                 st.session_state.messages.append({"role": "user", "content": user_query})
                 with st.chat_message("user"):
                     st.markdown(user_query)
@@ -211,7 +217,7 @@ if uploaded_files:
                 with st.chat_message("assistant"):
                     with st.spinner("Analyzing document..."):
                         docs = vector_store.similarity_search(user_query)
-                        res = ask_gemini(llm, docs, user_query)
+                        res = ask_gemini(llm, docs, prompt_with_bilingual)
                         st.markdown(res)
                         st.session_state.messages.append({"role": "assistant", "content": res})
 
@@ -219,7 +225,7 @@ if uploaded_files:
             if st.button("Generate Smart Summary"):
                 with st.spinner("Processing Summary..."):
                     docs = vector_store.similarity_search("Summary overview")
-                    summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সংক্ষেপে বাংলা ও ইংরেজিতে সাজিয়ে দাও।")
+                    summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
                     st.markdown(summary_res)
                     st.download_button("📥 Download Summary (.txt)", data=summary_res, file_name=f"{selected_code}_Summary.txt")
 
@@ -227,7 +233,7 @@ if uploaded_files:
             if st.button("Generate Exam Questions"):
                 with st.spinner("Generating Quiz..."):
                     docs = vector_store.similarity_search("Important concepts")
-                    quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য উপযোগী ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর তৈরি করো।")
+                    quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং প্রতিটি প্রশ্ন ও উত্তরের ঠিক নিচে বাংলা অনুবাদ (Bangla Translation) যুক্ত করো।")
                     st.markdown(quiz_res)
                     st.download_button("📥 Download Quiz (.txt)", data=quiz_res, file_name=f"{selected_code}_Quiz.txt")
 
@@ -235,7 +241,7 @@ if uploaded_files:
             if st.button("Generate Study Flashcards"):
                 with st.spinner("Generating Flashcards..."):
                     docs = vector_store.similarity_search("Key concepts definitions terms")
-                    flash_res = ask_gemini(llm, docs, "দ্রুত রিভিশন দেওয়ার জন্য গুরুত্বপূর্ণ ১০টি টপিকের Flashcards (Term: Definition) আকারে সুন্দর করে সাজিয়ে দাও।")
+                    flash_res = ask_gemini(llm, docs, "১০টি গুরুত্বপূর্ণ Flashcard (Term: Definition) সহজ ইংরেজিতে (Easy English) বানাও এবং প্রতিটি টার্মের সাথে বাংলা ব্যাখ্যা যুক্ত করো।")
                     st.markdown(flash_res)
                     st.download_button("📥 Download Flashcards (.txt)", data=flash_res, file_name=f"{selected_code}_Flashcards.txt")
 
@@ -243,6 +249,6 @@ if uploaded_files:
             if st.button("Extract Definitions & Formulas"):
                 with st.spinner("Extracting Key Terms..."):
                     docs = vector_store.similarity_search("Definitions equations formulas")
-                    formula_res = ask_gemini(llm, docs, "সব গুরুত্বপূর্ণ সংজ্ঞা এবং গাণিতিক সূত্র আলাদা তালিকা বানিয়ে দাও।")
+                    formula_res = ask_gemini(llm, docs, "গুরুত্বপূর্ণ সংজ্ঞা ও গাণিতিক সূত্রগুলো সহজ ইংরেজিতে (Easy English) লেখো এবং নিচে তার বাংলা অর্থ স্পষ্ট করে দাও।")
                     st.markdown(formula_res)
                     st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
