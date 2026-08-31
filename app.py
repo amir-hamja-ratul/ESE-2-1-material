@@ -2,7 +2,8 @@ import streamlit as st
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 
 # Page Config
@@ -75,7 +76,12 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions"
+    "MEQ": "Mid Exam Questions",
+    "GIS": "GIS & Remote Sensing Resources",
+    "EIA": "EIA & Environmental Law",
+    "LAB": "Lab Manuals & Protocols",
+    "FIELD": "Field Work Reports & Data",
+    "STD": "Environmental Standards & Guidelines"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -124,7 +130,6 @@ if "messages" not in st.session_state:
 
 # Process uploaded files
 if uploaded_files:
-    # Set API Key securely
     api_key = st.secrets.get("GOOGLE_API_KEY", None)
     if not api_key:
         st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! দয়া করে Streamlit Secrets-এ API Key যোগ করুন।")
@@ -146,16 +151,13 @@ if uploaded_files:
     col2.metric("📄 Total Processed Pages", total_pages)
     
     if raw_text.strip():
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        chunks = text_splitter.split_text(raw_text)
-        
-        # Updated embedding model with direct API key parameter
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004", 
-            google_api_key=api_key
-        )
-        
-        vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+        with st.spinner("Processing PDF contents..."):
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            chunks = text_splitter.split_text(raw_text)
+            
+            # Using HuggingFace embeddings locally for maximum stability
+            embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+            vector_store = FAISS.from_texts(chunks, embedding=embeddings)
         
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
         llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key, temperature=0.3)
