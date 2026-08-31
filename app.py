@@ -401,27 +401,23 @@ with tab6:
     st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
     st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
 
-    # কোর্স নির্বাচনের অপশন
- courses = [
-    "ESE 2101: Hydrology and Hydrogeology",
-    "ESE 2103: Oceanography and Limnology",
-    "ESE 2105: Ecology",
-    "ESE 2102: Ecology - Lab",
-    "ESE 2107: Environmental Microbiology",
-    "ESE 2104: Environmental Microbiology - Lab",
-    "ESE 2109: Survey and Settlement",
-    "ESE 2106: Survey and Settlement - Lab",
-    "ESE 2111: Soil Mechanics",
-    "ESE 2108: Engineering Drawing Lab",
-    "ESE 2113: Statistics for Environment",
-    "PYQ: Previous Year Questions",
-    "MEQ: Mid Exam Questions"
-]
-    
+    courses = [
+        "ESE 2101: Hydrology and Hydrogeology",
+        "ESE 2103: Oceanography and Limnology",
+        "ESE 2105: Ecology",
+        "ESE 2102: Ecology - Lab",
+        "ESE 2107: Environmental Microbiology",
+        "ESE 2104: Environmental Microbiology - Lab",
+        "ESE 2109: Survey and Settlement",
+        "ESE 2106: Survey and Settlement - Lab",
+        "ESE 2111: Soil Mechanics",
+        "ESE 2108: Engineering Drawing Lab",
+        "ESE 2113: Statistics for Environment"  
+    ]
+
     selected_course = st.selectbox("📚 কোর্স সিলেক্ট করুন:", courses, key="internal_course_select")
 
-    # ESE 1207 কোর্সের অফিশিয়াল মার্কশিট ডেটা
-    if selected_course == "ESE 1207: Mathematics-II":
+    if selected_course.startswith("ESE 2101"):
         data = {
             "Roll": [
                 "25103402", "25103405", "25103406", "25103409", "25103413", "25103413", 
@@ -444,11 +440,6 @@ with tab6:
             "Total Marks (40)": [37, 32, 34, 34, 36, 33, 37, 36, 33, 34, 34, 36, 35, 36, 30, 38, 36, 35, 36, 38, 40, 33, 37, 38, 39, 37, 37]
         }
         df_internal = pd.DataFrame(data)
-        
-        st.dataframe(
-            df_internal,
-            use_container_width=True,
-            hide_index=True
-        )
+        st.dataframe(df_internal, use_container_width=True, hide_index=True)
     else:
         st.info(f"📌 **{selected_course}** কোর্সের ইন্টারনাল মার্কশিট শিঘ্রই যুক্ত করা হবে।")
