@@ -9,7 +9,7 @@ import os
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Modern Light Theme CSS & Dark Block Text Color Fix
+# Modern Light Theme CSS & Download Button Fix
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -44,6 +44,27 @@ st.markdown("""
     [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span { color: #FFFFFF !important; }
     [data-testid="stFileUploader"] button, [data-testid="stFileUploader"] button * { color: #FFFFFF !important; fill: #FFFFFF !important; }
     
+    /* All Buttons & Download Buttons Color Fix */
+    .stButton>button, [data-testid="stDownloadButton"]>button {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        background-color: #4F46E5 !important;
+        color: #FFFFFF !important;
+        border: none !important;
+    }
+    
+    /* Ensure Download Button Text & Inner Elements are Bold White */
+    [data-testid="stDownloadButton"]>button * {
+        color: #FFFFFF !important;
+        fill: #FFFFFF !important;
+    }
+    
+    /* Button Hover Effect */
+    .stButton>button:hover, [data-testid="stDownloadButton"]>button:hover {
+        background-color: #4338CA !important;
+        color: #FFFFFF !important;
+    }
+    
     /* Hero Banner Styling */
     .hero-card {
         background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
@@ -54,13 +75,6 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .hero-card h1 { color: white !important; margin: 0; }
-    
-    .stButton>button {
-        border-radius: 8px;
-        font-weight: 600;
-        background-color: #4F46E5;
-        color: white;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -81,12 +95,7 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions",
-    "GIS": "GIS & Remote Sensing Resources",
-    "EIA": "EIA & Environmental Law",
-    "LAB": "Lab Manuals & Protocols",
-    "FIELD": "Field Work Reports & Data",
-    "STD": "Environmental Standards & Guidelines"
+    "MEQ": "Mid Exam Questions"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -129,7 +138,6 @@ def ask_gemini(llm, docs, question):
     prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
     response = llm.invoke(prompt)
     
-    # Ensure plain text extraction
     if hasattr(response, 'content'):
         if isinstance(response.content, str):
             return response.content
