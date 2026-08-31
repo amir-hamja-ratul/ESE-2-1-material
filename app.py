@@ -160,9 +160,9 @@ if uploaded_files:
         
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
         
-        # Fixed model string formulation
+        # Updated model identifier compatible with all AI Studio keys
         llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-3.6-flash",
             google_api_key=api_key,
             temperature=0.3
         )
