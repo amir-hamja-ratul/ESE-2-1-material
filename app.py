@@ -9,7 +9,7 @@ import os
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Modern Light Theme CSS & Download Button Fix
+# Modern Light Theme CSS & Text Visibility Fixes
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -28,6 +28,16 @@ st.markdown("""
     /* Dark Code Block / JSON View Text Color Fix */
     pre, code, [data-testid="stJson"] * {
         color: #FFFFFF !important;
+    }
+    
+    /* Chat Input Text Color & Placeholder Fix */
+    [data-testid="stChatInput"] textarea {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: #94A3B8 !important;
+        -webkit-text-fill-color: #94A3B8 !important;
     }
     
     /* Header & Sidebar Collapse Arrow Color Fix */
