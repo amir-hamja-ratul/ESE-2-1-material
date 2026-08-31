@@ -5,32 +5,25 @@ from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
+import glob
 
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Modern Light Theme CSS & Text Visibility Fixes
+# Modern Light Theme CSS & Fixes
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     .stApp { background-color: #F8F9FA; color: #1E293B !important; }
     [data-testid="stSidebar"] { background-color: #E9ECEF; }
     
-    /* Text Color Fixes */
     html, body, p, label, span, h1, h2, h3, h4, .stMarkdown { color: #1E293B !important; }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div { color: #1E293B !important; }
     
-    /* Dark Code Block / JSON View Text Color Fix */
-    pre, code, [data-testid="stJson"] * {
-        color: #FFFFFF !important;
-    }
+    pre, code, [data-testid="stJson"] * { color: #FFFFFF !important; }
     
-    /* Chat Input Text Color & Placeholder Fix */
     [data-testid="stChatInput"] textarea {
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
@@ -40,21 +33,15 @@ st.markdown("""
         -webkit-text-fill-color: #94A3B8 !important;
     }
     
-    /* Header & Sidebar Collapse Arrow Color Fix */
-    [data-testid="stHeader"] {
-        background-color: #F8F9FA !important;
-    }
-    [data-testid="stHeader"] button svg,
-    [data-testid="stSidebarCollapseButton"] button svg {
+    [data-testid="stHeader"] { background-color: #F8F9FA !important; }
+    [data-testid="stHeader"] button svg, [data-testid="stSidebarCollapseButton"] button svg {
         fill: #1E293B !important;
         color: #1E293B !important;
     }
     
-    /* File Uploader Style */
     [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span { color: #FFFFFF !important; }
     [data-testid="stFileUploader"] button, [data-testid="stFileUploader"] button * { color: #FFFFFF !important; fill: #FFFFFF !important; }
     
-    /* All Buttons & Download Buttons Color Fix */
     .stButton>button, [data-testid="stDownloadButton"]>button {
         border-radius: 8px !important;
         font-weight: 600 !important;
@@ -63,19 +50,9 @@ st.markdown("""
         border: none !important;
     }
     
-    /* Ensure Download Button Text & Inner Elements are Bold White */
-    [data-testid="stDownloadButton"]>button * {
-        color: #FFFFFF !important;
-        fill: #FFFFFF !important;
-    }
+    [data-testid="stDownloadButton"]>button * { color: #FFFFFF !important; fill: #FFFFFF !important; }
+    .stButton>button:hover, [data-testid="stDownloadButton"]>button:hover { background-color: #4338CA !important; color: #FFFFFF !important; }
     
-    /* Button Hover Effect */
-    .stButton>button:hover, [data-testid="stDownloadButton"]>button:hover {
-        background-color: #4338CA !important;
-        color: #FFFFFF !important;
-    }
-    
-    /* Hero Banner Styling */
     .hero-card {
         background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
         padding: 24px;
@@ -105,12 +82,7 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions",
-    "GIS": "GIS & Remote Sensing Resources",
-    "EIA": "EIA & Environmental Law",
-    "LAB": "Lab Manuals & Protocols",
-    "FIELD": "Field Work Reports & Data",
-    "STD": "Environmental Standards & Guidelines"
+    "MEQ": "Mid Exam Questions"
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -126,7 +98,6 @@ with st.sidebar:
     
     st.divider()
     
-    # Hidden Admin Panel via URL Parameter
     query_params = st.query_params
     if query_params.get("admin") == "true":
         admin_pass = st.text_input("🔒 Secret Key", type="password")
@@ -145,7 +116,6 @@ if admin_pass == "285277":
     st.success("⚡ Admin Mode Enabled: Document Upload Access Granted")
     uploaded_files = st.file_uploader("📥 Upload Course Materials (PDF)", accept_multiple_files=True, type="pdf")
 else:
-    st.info("ℹ️ Student View Mode: Access Pre-loaded Workspace Content")
     uploaded_files = None
 
 def ask_gemini(llm, docs, question):
@@ -164,91 +134,100 @@ def ask_gemini(llm, docs, question):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Process uploaded files
-if uploaded_files:
-    api_key = st.secrets.get("GOOGLE_API_KEY", None)
-    if not api_key:
-        st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! দয়া করে Streamlit Secrets-এ API Key যোগ করুন।")
-        st.stop()
-        
-    os.environ["GOOGLE_API_KEY"] = api_key
+# API Key Check
+api_key = st.secrets.get("GOOGLE_API_KEY", None)
+if not api_key:
+    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! দয়া করে Streamlit Secrets-এ API Key যোগ করুন।")
+    st.stop()
+os.environ["GOOGLE_API_KEY"] = api_key
 
-    raw_text = ""
-    total_pages = 0
-    
+# Load Local PDFs from 'data/' folder or uploaded files
+local_pdfs = glob.glob("data/*.pdf")
+raw_text = ""
+total_pages = 0
+
+if uploaded_files:
     for pdf in uploaded_files:
         pdf_reader = PdfReader(pdf)
         total_pages += len(pdf_reader.pages)
         for page in pdf_reader.pages:
             raw_text += page.extract_text() or ""
-            
+elif local_pdfs:
+    for pdf_path in local_pdfs:
+        pdf_reader = PdfReader(pdf_path)
+        total_pages += len(pdf_reader.pages)
+        for page in pdf_reader.pages:
+            raw_text += page.extract_text() or ""
+
+if raw_text.strip():
     col1, col2 = st.columns(2)
-    col1.metric("📂 Loaded Files", len(uploaded_files))
+    col1.metric("📂 Loaded Files", len(uploaded_files) if uploaded_files else len(local_pdfs))
     col2.metric("📄 Total Processed Pages", total_pages)
+
+    with st.spinner("Processing PDF contents..."):
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        chunks = text_splitter.split_text(raw_text)
+        
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     
-    if raw_text.strip():
-        with st.spinner("Processing PDF contents..."):
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-            chunks = text_splitter.split_text(raw_text)
-            
-            embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-            vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-        
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
-        
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-3.6-flash",
-            google_api_key=api_key,
-            temperature=0.3
-        )
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
+    
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-3.6-flash",
+        google_api_key=api_key,
+        temperature=0.3
+    )
 
-        with tab1:
-            st.subheader("Ask Anything About Course Materials")
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+    with tab1:
+        st.subheader("Ask Anything About Course Materials")
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-            if user_query := st.chat_input("Enter your question here..."):
-                prompt_with_bilingual = f"{user_query}\n\n[অর্ডার: উত্তরটি প্রথমে সহজ ইংরেজিতে (Easy English) দেবে এবং সাথে সাথেই তার বাংলা অনুবাদ (Bangla Translation) নিচে যুক্ত করবে।]"
-                st.session_state.messages.append({"role": "user", "content": user_query})
-                with st.chat_message("user"):
-                    st.markdown(user_query)
+        if user_query := st.chat_input("Enter your question here..."):
+            prompt_with_bilingual = f"{user_query}\n\n[অর্ডার: উত্তরটি প্রথমে সহজ ইংরেজিতে (Easy English) দেবে এবং সাথে সাথেই তার বাংলা অনুবাদ (Bangla Translation) নিচে যুক্ত করবে।]"
+            st.session_state.messages.append({"role": "user", "content": user_query})
+            with st.chat_message("user"):
+                st.markdown(user_query)
 
-                with st.chat_message("assistant"):
-                    with st.spinner("Analyzing document..."):
-                        docs = vector_store.similarity_search(user_query)
-                        res = ask_gemini(llm, docs, prompt_with_bilingual)
-                        st.markdown(res)
-                        st.session_state.messages.append({"role": "assistant", "content": res})
+            with st.chat_message("assistant"):
+                with st.spinner("Analyzing document..."):
+                    docs = vector_store.similarity_search(user_query)
+                    res = ask_gemini(llm, docs, prompt_with_bilingual)
+                    st.markdown(res)
+                    st.session_state.messages.append({"role": "assistant", "content": res})
 
-        with tab2:
-            if st.button("Generate Smart Summary"):
-                with st.spinner("Processing Summary..."):
-                    docs = vector_store.similarity_search("Summary overview")
-                    summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
-                    st.markdown(summary_res)
-                    st.download_button("📥 Download Summary (.txt)", data=summary_res, file_name=f"{selected_code}_Summary.txt")
+    with tab2:
+        if st.button("Generate Smart Summary"):
+            with st.spinner("Processing Summary..."):
+                docs = vector_store.similarity_search("Summary overview")
+                summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
+                st.markdown(summary_res)
+                st.download_button("📥 Download Summary (.txt)", data=summary_res, file_name=f"{selected_code}_Summary.txt")
 
-        with tab3:
-            if st.button("Generate Exam Questions"):
-                with st.spinner("Generating Quiz..."):
-                    docs = vector_store.similarity_search("Important concepts")
-                    quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং প্রতিটি প্রশ্ন ও উত্তরের ঠিক নিচে বাংলা অনুবাদ (Bangla Translation) যুক্ত করো।")
-                    st.markdown(quiz_res)
-                    st.download_button("📥 Download Quiz (.txt)", data=quiz_res, file_name=f"{selected_code}_Quiz.txt")
+    with tab3:
+        if st.button("Generate Exam Questions"):
+            with st.spinner("Generating Quiz..."):
+                docs = vector_store.similarity_search("Important concepts")
+                quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং প্রতিটি প্রশ্ন ও উত্তরের ঠিক নিচে বাংলা অনুবাদ (Bangla Translation) যুক্ত করো।")
+                st.markdown(quiz_res)
+                st.download_button("📥 Download Quiz (.txt)", data=quiz_res, file_name=f"{selected_code}_Quiz.txt")
 
-        with tab4:
-            if st.button("Generate Study Flashcards"):
-                with st.spinner("Generating Flashcards..."):
-                    docs = vector_store.similarity_search("Key concepts definitions terms")
-                    flash_res = ask_gemini(llm, docs, "১০টি গুরুত্বপূর্ণ Flashcard (Term: Definition) সহজ ইংরেজিতে (Easy English) বানাও এবং প্রতিটি টার্মের সাথে বাংলা ব্যাখ্যা যুক্ত করো।")
-                    st.markdown(flash_res)
-                    st.download_button("📥 Download Flashcards (.txt)", data=flash_res, file_name=f"{selected_code}_Flashcards.txt")
+    with tab4:
+        if st.button("Generate Study Flashcards"):
+            with st.spinner("Generating Flashcards..."):
+                docs = vector_store.similarity_search("Key concepts definitions terms")
+                flash_res = ask_gemini(llm, docs, "১০টি গুরুত্বপূর্ণ Flashcard (Term: Definition) সহজ ইংরেজিতে (Easy English) বানাও এবং প্রতিটি টার্মের সাথে বাংলা ব্যাখ্যা যুক্ত করো।")
+                st.markdown(flash_res)
+                st.download_button("📥 Download Flashcards (.txt)", data=flash_res, file_name=f"{selected_code}_Flashcards.txt")
 
-        with tab5:
-            if st.button("Extract Definitions & Formulas"):
-                with st.spinner("Extracting Key Terms..."):
-                    docs = vector_store.similarity_search("Definitions equations formulas")
-                    formula_res = ask_gemini(llm, docs, "গুরুত্বপূর্ণ সংজ্ঞা ও গাণিতিক সূত্রগুলো সহজ ইংরেজিতে (Easy English) লেখো এবং নিচে তার বাংলা অর্থ স্পষ্ট করে দাও।")
-                    st.markdown(formula_res)
-                    st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
+    with tab5:
+        if st.button("Extract Definitions & Formulas"):
+            with st.spinner("Extracting Key Terms..."):
+                docs = vector_store.similarity_search("Definitions equations formulas")
+                formula_res = ask_gemini(llm, docs, "গুরুত্বপূর্ণ সংজ্ঞা ও গাণিতিক সূত্রগুলো সহজ ইংরেজিতে (Easy English) লেখো এবং নিচে তার বাংলা অর্থ স্পষ্ট করে দাও।")
+                st.markdown(formula_res)
+                st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
+else:
+    st.info("📌 বর্তমানে কোনো PDF লোড করা নেই। অ্যাডমিন প্যানেল থেকে ফাইল আপলোড করুন অথবা প্রজেক্টের `data/` ফোল্ডারে PDF ফাইল যুক্ত করুন।")
