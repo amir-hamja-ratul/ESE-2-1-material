@@ -155,12 +155,17 @@ if uploaded_files:
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
             chunks = text_splitter.split_text(raw_text)
             
-            # Using HuggingFace embeddings locally for maximum stability
             embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
             vector_store = FAISS.from_texts(chunks, embedding=embeddings)
         
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key, temperature=0.3)
+        
+        # Fixed model string formulation
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-flash",
+            google_api_key=api_key,
+            temperature=0.3
+        )
 
         with tab1:
             st.subheader("Ask Anything About Course Materials")
