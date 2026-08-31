@@ -193,11 +193,7 @@ course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 with st.sidebar:
     # Centered Logo using HTML/CSS
     st.markdown("""
-        <div style="display: flex; justify-content: center; margin-bottom: 10px;">
-            <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
-        </div>
-    """, unsafe_allow_html=True)
-    /* Custom style for Sidebar Collapse/Expand Button */
+        <div style="display: flex; justify-content: center; margin-bottom: 10px;"/* Custom style for Sidebar Collapse/Expand Button */
     [data-testid="collapsedControl"] {
         background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
         color: #FFFFFF !important;
@@ -206,6 +202,14 @@ with st.sidebar:
         margin: 10px 0 0 10px !important;
         padding: 4px !important;
     }
+    
+    [data-testid="collapsedControl"] svg {
+        fill: #FFFFFF !important;
+    }
+</style>>
+            <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
+        </div>
+  
     
     /* Change arrow/icon color inside the button */
     [data-testid="collapsedControl"] svg {
