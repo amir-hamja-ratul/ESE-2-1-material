@@ -230,4 +230,4 @@ if raw_text.strip():
                 st.markdown(formula_res)
                 st.download_button("📥 Download Formulas (.txt)", data=formula_res, file_name=f"{selected_code}_Formulas.txt")
 else:
-    st.info("📌 বর্তমানে কোনো PDF লোড করা নেই। অ্যাডমিন প্যানেল থেকে ফাইল আপলোড করুন অথবা প্রজেক্টের `data/` ফোল্ডারে PDF ফাইল যুক্ত করুন।")
+    st.info("📌 বর্তমানে কোনো PDF লোড করা নেই।")
