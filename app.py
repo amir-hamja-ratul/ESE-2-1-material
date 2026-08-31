@@ -394,73 +394,51 @@ if raw_text.strip():
 else:
     st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো ডকুমেন্ট লোড করা নেই।")
     
-    with tab6:
+   with tab6:
+    import pandas as pd
 
+    # ডেটা ডিকশনারি ডিফাইন করা
+    data = {
+        "Student Name": [
+            "Student 1", "Student 2", "Student 3", "Student 4", "Student 5",
+            "Student 6", "Student 7", "Student 8", "Student 9", "Student 10",
+            "Student 11", "Student 12", "Student 13", "Student 14", "Student 15",
+            "Student 16", "Student 17", "Student 18", "Student 19", "Student 20",
+            "Student 21", "Student 22", "Student 23", "Student 24", "Student 25", "Student 26"
+        ],
+        "CGPA": [
+            3.95, 3.91, 3.88, 3.85, 3.82, 3.79, 3.75, 3.72, 3.69, 3.65,
+            3.62, 3.58, 3.55, 3.50, 3.47, 3.43, 3.40, 3.35, 3.31, 3.27,
+            3.22, 3.18, 3.14, 3.09, 3.05, 3.00
+        ],
+        "Total Marks": [
+            910, 895, 882, 870, 858, 845, 832, 820, 808, 795,
+            782, 770, 758, 745, 733, 720, 708, 695, 682, 670,
+            658, 645, 632, 620, 608, 595
+        ]
+    }
 
+    df = pd.DataFrame(data)
 
+    st.markdown("### 🏆 ESE-10 Batch Dynamic Leaderboard")
+    st.markdown("আপনার পছন্দ অনুযায়ী **CGPA** অথবা **Total Marks** ফিল্টার করে র‍্যাংক দেখতে পারবেন।")
 
+    sort_choice = st.radio(
+        "📊 র‍্যাংকিং ক্রাইটেরিয়া নির্বাচন করুন:", 
+        ["CGPA", "Total Marks"], 
+        horizontal=True,
+        key="leaderboard_sort"
+    )
 
+    if sort_choice == "CGPA":
+        df_sorted = df.sort_values(by="CGPA", ascending=False).reset_index(drop=True)
+    else:
+        df_sorted = df.sort_values(by="Total Marks", ascending=False).reset_index(drop=True)
 
+    df_sorted.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_sorted) + 1)])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        import pandas as pd
-
-# ডেটা ডিকশনারি ডিফাইন করা
-data = {
-    "Student Name": [
-        "Student 1", "Student 2", "Student 3", "Student 4", "Student 5",
-        "Student 6", "Student 7", "Student 8", "Student 9", "Student 10",
-        "Student 11", "Student 12", "Student 13", "Student 14", "Student 15",
-        "Student 16", "Student 17", "Student 18", "Student 19", "Student 20",
-        "Student 21", "Student 22", "Student 23", "Student 24", "Student 25", "Student 26"
-    ],
-    "CGPA": [
-        3.95, 3.91, 3.88, 3.85, 3.82, 3.79, 3.75, 3.72, 3.69, 3.65,
-        3.62, 3.58, 3.55, 3.50, 3.47, 3.43, 3.40, 3.35, 3.31, 3.27,
-        3.22, 3.18, 3.14, 3.09, 3.05, 3.00
-    ],
-    "Total Marks": [
-        910, 895, 882, 870, 858, 845, 832, 820, 808, 795,
-        782, 770, 758, 745, 733, 720, 708, 695, 682, 670,
-        658, 645, 632, 620, 608, 595
-    ]
-}
-
-df = pd.DataFrame(data)
-
-st.markdown("### 🏆 ESE-10 Batch Dynamic Leaderboard")
-st.markdown("আপনার পছন্দ অনুযায়ী **CGPA** অথবা **Total Marks** ফিল্টার করে র‍্যাংক দেখতে পারবেন।")
-
-sort_choice = st.radio(
-    "📊 র‍্যাংকিং ক্রাইটেরিয়া নির্বাচন করুন:", 
-    ["CGPA", "Total Marks"], 
-    horizontal=True,
-    key="leaderboard_sort"
-)
-
-if sort_choice == "CGPA":
-    df_sorted = df.sort_values(by="CGPA", ascending=False).reset_index(drop=True)
-else:
-    df_sorted = df.sort_values(by="Total Marks", ascending=False).reset_index(drop=True)
-
-df_sorted.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_sorted) + 1)])
-
-st.dataframe(
-    df_sorted,
-    use_container_width=True,
-    hide_index=True
-)
+    st.dataframe(
+        df_sorted,
+        use_container_width=True,
+        hide_index=True
+    )
