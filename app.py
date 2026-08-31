@@ -13,116 +13,13 @@ import io
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Fixed Contrast & Visible Text CSS
+# Safe Header Design (Theme-independent)
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-    
-    html, body, [class*="css"] { 
-        font-family: 'Plus Jakarta Sans', sans-serif; 
-    }
-    
-    /* Force Light Background */
-    .stApp { 
-        background-color: #F8FAFC !important; 
-    }
-    
-    /* Force Visible Text Colors Across App */
-    h1, h2, h3, h4, h5, h6, p, label, span, div, .stMarkdown {
-        color: #0F172A !important;
-    }
-    
-    /* Sidebar Text & Background Fix */
-    [data-testid="stSidebar"] { 
-        background-color: #FFFFFF !important; 
-        border-right: 1px solid #E2E8F0 !important;
-    }
-    [data-testid="stSidebar"] * {
-        color: #0F172A !important;
-    }
-    
-    /* Header Styling Fix */
-    .header-container {
-        text-align: center;
-        padding: 10px 0 20px 0;
-    }
-    .dept-title {
-        color: #0F172A !important;
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin-bottom: 6px;
-    }
-    .sem-badge {
-        display: inline-block;
-        background-color: #EEF2FF !important;
-        color: #4F46E5 !important;
-        font-weight: 600;
-        font-size: 0.9rem;
-        padding: 4px 16px;
-        border-radius: 20px;
-        border: 1px solid #C7D2FE !important;
-    }
-    
-    /* Hero Banner Fix */
-    .hero-card {
-        background: linear-gradient(135deg, #1E1B4B 0%, #4338CA 100%) !important;
-        padding: 28px 32px;
-        border-radius: 16px;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 15px -3px rgba(67, 56, 202, 0.2);
-    }
-    .hero-card h1 { 
-        color: #FFFFFF !important; 
-        margin: 0; 
-        font-size: 1.8rem;
-        font-weight: 700;
-    }
-    
-    /* Metric Cards Text Fix */
-    .metric-card {
-        background: #FFFFFF !important;
-        padding: 16px 20px;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0 !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        text-align: center;
-    }
-    .metric-value {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: #4F46E5 !important;
-    }
-    .metric-label {
-        font-size: 0.85rem;
-        color: #64748B !important;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    /* Buttons Fix */
-    .stButton>button, [data-testid="stDownloadButton"]>button {
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        background-color: #4F46E5 !important;
-        color: #FFFFFF !important;
-        border: none !important;
-    }
-    
-    /* Tabs Text Fix */
-    .stTabs [data-baseweb="tab"] {
-        color: #475569 !important;
-        font-weight: 600;
-    }
-    .stTabs [aria-selected="true"] {
-        color: #4F46E5 !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-# Top Department Header
-st.markdown("""
-    <div class="header-container">
-        <div class="dept-title">🌱 Department of Environmental Science and Engineering</div>
-        <div class="sem-badge">📚 2nd Year 1st Semester</div>
+    <div style='text-align: center; padding: 10px 0 20px 0;'>
+        <h2 style='margin-bottom: 5px;'>🌱 Department of Environmental Science and Engineering</h2>
+        <span style='background-color: #4F46E5; color: #FFFFFF; font-weight: 600; font-size: 0.9rem; padding: 4px 16px; border-radius: 20px;'>
+            📚 2nd Year 1st Semester
+        </span>
     </div>
 """, unsafe_allow_html=True)
 
@@ -139,7 +36,7 @@ COURSES = {
     "ESE 2108": "Engineering Drawing Lab",
     "ESE 2113": "Statistics for Environment",
     "PYQ": "Previous Year Questions",
-    "MEQ": "Mid Exam Questions"
+    "MEQ": "Mid Exam Questions",
 }
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
@@ -157,11 +54,8 @@ with st.sidebar:
     query_params = st.query_params
     admin_pass = st.text_input("🔒 Secret Key", type="password") if query_params.get("admin") == "true" else ""
 
-st.markdown(f"""
-    <div class="hero-card">
-        <h1>🎓 {selected_code}: {selected_title}</h1>
-    </div>
-""", unsafe_allow_html=True)
+# Hero Title
+st.title(f"🎓 {selected_code}: {selected_title}")
 
 if admin_pass == "285277":
     st.success("⚡ Admin Mode Enabled: Document Upload Access Granted")
@@ -228,22 +122,10 @@ elif local_pdfs:
 
 if raw_text.strip():
     col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{files_count}</div>
-                <div class="metric-label">📂 Loaded Files</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{total_pages}</div>
-                <div class="metric-label">📄 Processed Pages</div>
-            </div>
-        """, unsafe_allow_html=True)
+    col1.metric("📂 Loaded Files", files_count)
+    col2.metric("📄 Processed Pages", total_pages)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("---")
 
     with st.spinner("Processing PDF contents..."):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
@@ -252,7 +134,6 @@ if raw_text.strip():
         embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     
-    # Clean Tabs Layout
     tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(["📖 View & Download PDF", "💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
     
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
