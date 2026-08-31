@@ -412,7 +412,9 @@ with tab6:
         "ESE 2106: Survey and Settlement - Lab",
         "ESE 2111: Soil Mechanics",
         "ESE 2108: Engineering Drawing Lab",
-        "ESE 2113: Statistics for Environment"  
+        "ESE 2113: Statistics for Environment",
+        "PYQ: Previous Year Questions",
+        "MEQ: Mid Exam Questions"
     ]
 
     selected_course = st.selectbox("📚 কোর্স সিলেক্ট করুন:", courses, key="internal_course_select")
@@ -440,6 +442,11 @@ with tab6:
             "Total Marks (40)": [37, 32, 34, 34, 36, 33, 37, 36, 33, 34, 34, 36, 35, 36, 30, 38, 36, 35, 36, 38, 40, 33, 37, 38, 39, 37, 37]
         }
         df_internal = pd.DataFrame(data)
+        
+        # Sort by Total Marks (Highest to Lowest) and add Rank column
+        df_internal = df_internal.sort_values(by="Total Marks (40)", ascending=False).reset_index(drop=True)
+        df_internal.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_internal) + 1)])
+        
         st.dataframe(df_internal, use_container_width=True, hide_index=True)
     else:
         st.info(f"📌 **{selected_course}** কোর্সের ইন্টারনাল মার্কশিট শিঘ্রই যুক্ত করা হবে।")
