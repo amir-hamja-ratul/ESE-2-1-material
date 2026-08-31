@@ -13,43 +13,123 @@ import io
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Modern Light Theme CSS
+# Advanced Professional CSS
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-    .stApp { background-color: #F8F9FA; color: #1E293B !important; }
-    [data-testid="stSidebar"] { background-color: #E9ECEF; }
+    html, body, [class*="css"] { 
+        font-family: 'Plus Jakarta Sans', sans-serif; 
+    }
+    .stApp { 
+        background-color: #F8FAFC; 
+        color: #0F172A !important; 
+    }
     
-    html, body, p, label, span, h1, h2, h3, h4, .stMarkdown { color: #1E293B !important; }
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div { color: #1E293B !important; }
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] { 
+        background-color: #FFFFFF; 
+        border-right: 1px solid #E2E8F0;
+    }
     
+    /* Top Header Styling */
+    .header-container {
+        text-align: center;
+        padding: 10px 0 20px 0;
+    }
+    .dept-title {
+        color: #0F172A;
+        font-size: 1.8rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 6px;
+    }
+    .sem-badge {
+        display: inline-block;
+        background-color: #EEF2FF;
+        color: #4F46E5;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 4px 16px;
+        border-radius: 20px;
+        border: 1px solid #C7D2FE;
+    }
+    
+    /* Hero Banner */
+    .hero-card {
+        background: linear-gradient(135deg, #1E1B4B 0%, #4338CA 100%);
+        padding: 28px 32px;
+        border-radius: 16px;
+        color: white !important;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 15px -3px rgba(67, 56, 202, 0.2);
+    }
+    .hero-card h1 { 
+        color: #FFFFFF !important; 
+        margin: 0; 
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+    
+    /* Custom Metric Cards */
+    .metric-card {
+        background: #FFFFFF;
+        padding: 16px 20px;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+    .metric-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #4F46E5;
+    }
+    .metric-label {
+        font-size: 0.85rem;
+        color: #64748B;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Buttons */
     .stButton>button, [data-testid="stDownloadButton"]>button {
         border-radius: 8px !important;
         font-weight: 600 !important;
         background-color: #4F46E5 !important;
         color: #FFFFFF !important;
         border: none !important;
+        padding: 8px 16px !important;
+        transition: all 0.2s ease;
+    }
+    .stButton>button:hover, [data-testid="stDownloadButton"]>button:hover {
+        background-color: #4338CA !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
     }
     
-    .hero-card {
-        background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-        padding: 24px;
-        border-radius: 12px;
-        color: white !important;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    /* Tabs Customization */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        border-bottom: 2px solid #E2E8F0;
     }
-    .hero-card h1 { color: white !important; margin: 0; }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 6px 6px 0 0;
+        padding: 8px 16px;
+        font-weight: 600;
+        color: #64748B;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #4F46E5 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # Top Department Header
 st.markdown("""
-    <div style='text-align: center; margin-bottom: 24px;'>
-        <h2 style='color: #1E293B; font-size: 1.8rem; font-weight: 700; margin-bottom: 4px;'>🌱 Department of Environmental Science and Engineering</h2>
-        <p style='color: #4F46E5; font-weight: 600; font-size: 1.1rem; margin: 0;'>📚 2nd Year 1st Semester</p>
+    <div class="header-container">
+        <div class="dept-title">🌱 Department of Environmental Science and Engineering</div>
+        <div class="sem-badge">📚 2nd Year 1st Semester</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -72,7 +152,7 @@ COURSES = {
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=65)
+    st.image("https://cdn-icons-png.flaticon.com/512/3429/3429149.png", width=60)
     st.title("Workspace Navigation")
     
     selected_option = st.selectbox("📌 Select Course", course_options)
@@ -107,15 +187,14 @@ def ask_gemini(llm, docs, question):
             return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
     return str(response)
 
-# Helper function to display PDF pages as images (100% Reliable)
+# Helper function to display PDF pages as images
 def display_pdf(file_path):
     doc = fitz.open(file_path)
-    st.write(f"📖 **Total Pages:** {len(doc)}")
+    st.info(f"📖 **Total Pages:** {len(doc)}")
     
-    # Iterate through pages and display as images
     for page_num in range(len(doc)):
         page = doc.load_page(page_num)
-        pix = page.get_pixmap(dpi=150)  # High quality rendering
+        pix = page.get_pixmap(dpi=150)
         img_bytes = pix.tobytes("png")
         image = Image.open(io.BytesIO(img_bytes))
         
@@ -156,8 +235,22 @@ elif local_pdfs:
 
 if raw_text.strip():
     col1, col2 = st.columns(2)
-    col1.metric("📂 Loaded Files", files_count)
-    col2.metric("📄 Total Processed Pages", total_pages)
+    with col1:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{files_count}</div>
+                <div class="metric-label">📂 Loaded Files</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{total_pages}</div>
+                <div class="metric-label">📄 Processed Pages</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     with st.spinner("Processing PDF contents..."):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
@@ -166,7 +259,7 @@ if raw_text.strip():
         embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     
-    # Tabs with Image-based PDF Viewer
+    # Clean Tabs Layout
     tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(["📖 View & Download PDF", "💬 Interactive Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas & Terms"])
     
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
@@ -176,7 +269,6 @@ if raw_text.strip():
         if local_pdfs:
             selected_pdf = st.selectbox("Select PDF to view:", local_pdfs, format_func=lambda x: os.path.basename(x))
             
-            # Download Button
             with open(selected_pdf, "rb") as f:
                 st.download_button(
                     label=f"📥 Download {os.path.basename(selected_pdf)}",
@@ -185,7 +277,6 @@ if raw_text.strip():
                     mime="application/pdf"
                 )
             
-            # Render PDF pages cleanly as images
             st.markdown("---")
             display_pdf(selected_pdf)
 
