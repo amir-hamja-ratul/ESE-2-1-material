@@ -309,7 +309,7 @@ if raw_text.strip():
     
     tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(["📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas"])
     
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
+    llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", google_api_key=api_key, temperature=0.3)
 
     with tab0:
         st.markdown("### 📄 Course Documents Viewer")
