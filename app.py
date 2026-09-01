@@ -89,45 +89,47 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* --- TABS STYLED AS DOWNLOAD BUTTONS & RED LINE REMOVED --- */
-    [data-testid="stTabs"] {
+    /* --- TABS COMPLETELY TRANSFORMED INTO DOWNLOAD BUTTONS --- */
+    .stTabs {
         background: transparent !important;
     }
     
-    [data-baseweb="tab-list"] {
-        gap: 10px !important;
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 12px !important;
         background-color: transparent !important;
         border-bottom: none !important;
-        padding-bottom: 10px !important;
+        padding-bottom: 12px !important;
     }
 
-    /* ডিফল্ট লাল/নীল আন্ডারলাইন পুরোপুরি লুকিয়ে ফেলা */
-    div[data-baseweb="tab-highlight"], 
-    [data-testid="stTabs"] div[data-baseweb="tab-highlight"] {
+    /* Remove Streamlit default red/blue underline and highlight line completely */
+    .stTabs [data-baseweb="tab-highlight"], 
+    .stTabs div[data-baseweb="tab-highlight"] {
         display: none !important;
         height: 0px !important;
-        background-color: transparent !important;
+        background: transparent !important;
     }
 
-    /* প্রতিটি ট্যাব বাটনকে নরমাল অবস্থায় স্টাইল দেওয়া */
-    button[data-baseweb="tab"] {
+    /* Style for each tab item to look like an unselected button */
+    .stTabs [data-baseweb="tab"] {
+        height: 45px !important;
         border-radius: 14px !important;
         background-color: #F1F5F9 !important;
         border: 1px solid #CBD5E1 !important;
         color: #334155 !important;
-        padding: 10px 20px !important;
+        padding: 0px 20px !important;
         font-weight: 600 !important;
         box-shadow: 0 2px 5px rgba(0,0,0,0.03) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
 
-    button[data-baseweb="tab"]:hover {
+    .stTabs [data-baseweb="tab"]:hover {
         background-color: #E2E8F0 !important;
+        border-color: #94A3B8 !important;
         transform: translateY(-1px);
     }
 
-    /* সিলেক্ট করা ট্যাব বাটনটি একদম ডাউনলোড বাটনের মতো সবুজ গ্রুভ ও শ্যাডো পাবে */
-    button[data-baseweb="tab"][aria-selected="true"] {
+    /* Active Tab styling - Exact match with the green download button */
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
         color: #FFFFFF !important;
         border: 1px solid #059669 !important;
