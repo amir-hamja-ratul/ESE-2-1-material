@@ -6,45 +6,16 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 import glob
-import fitz  # PyMuPDF
+import fitz   # PyMuPDF
 from PIL import Image
 import io
 
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Advanced Premium UI/UX CSS
+# Advanced Premium UI/UX CSS & Glassmorphism for Tabs
 st.markdown("""
 <style>
-/* ট্যাব লিস্টের মূল ব্যাকগ্রাউন্ড এবং গ্লাস ইফেক্ট জোরদার করা */
-div[data-testid="stHorizontalBlock"] div[data-baseweb="tab-list"] {
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 16px !important;
-    padding: 8px !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
-}
-
-/* প্রতিটি ট্যাবের টেক্সট ও প্যাডিং সুন্দর করা */
-div[data-baseweb="tab"] {
-    border-radius: 10px !important;
-    color: inherit !important;
-    transition: all 0.3s ease !important;
-}
-
-/* সিলেক্ট করা বা অ্যাক্টিভ ট্যাবের স্টাইল */
-div[data-baseweb="tab"][aria-selected="true"] {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
-}
-</style>
-""", unsafe_allow_html=True)
-</style>
-""", unsafe_allow_html=True)
-st.markdown("""
-    <style>
     /* Google Fonts Import */
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
     
@@ -149,29 +120,28 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* Pill-Style Modern Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 12px;
-        padding: 4px 0 16px 0;
+    /* Glassmorphism Styling for Tabs */
+    div[data-baseweb="tab-list"] {
+        background: rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 16px !important;
+        padding: 8px !important;
+        gap: 8px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
     }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #F1F5F9;
-        border-radius: 30px !important;
-        padding: 10px 24px !important;
-        border: 1px solid transparent !important;
-        color: #475569 !important;
+    div[data-baseweb="tab"] {
+        border-radius: 10px !important;
+        color: inherit !important;
         font-weight: 600 !important;
+        padding: 10px 18px !important;
         transition: all 0.3s ease !important;
-        box-shadow: none !important;
     }
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
-        color: #FFFFFF !important;
-        box-shadow: 0 8px 15px -3px rgba(79, 70, 229, 0.4) !important;
-    }
-    .stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) {
-        background-color: #E2E8F0;
-        transform: translateY(-2px);
+    div[data-baseweb="tab"][aria-selected="true"] {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
     }
 
     /* Premium Button Styling */
@@ -200,11 +170,10 @@ st.markdown("""
         margin: 10px 0 0 10px !important;
         padding: 4px !important;
     }
-    
     [data-testid="collapsedControl"] svg {
         fill: #FFFFFF !important;
     }
-    </style>
+</style>
 """, unsafe_allow_html=True)
 
 # Top Header UI
@@ -234,14 +203,12 @@ COURSES = {
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
-    # Centered Logo using HTML/CSS
     st.markdown("""
         <div style="display: flex; justify-content: center; margin-bottom: 10px;">
             <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
         </div>
     """, unsafe_allow_html=True)
     
-    # Centered Title
     st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 20px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
     
     selected_option = st.selectbox("📌 Select Course Material", course_options)
@@ -253,7 +220,6 @@ with st.sidebar:
     query_params = st.query_params
     admin_pass = st.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
     
-    # Centered Footer Caption
     st.markdown("<p style='text-align: center; color: #64748B; font-size: 0.8rem; margin-top: 20px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
 
 # Course Title Banner
@@ -350,7 +316,7 @@ if raw_text.strip():
         embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     
-    tab0, tab1, tab2, tab3, tab4, tab5,tab6 = st.tabs(["📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas","Leaderboard"])
+    tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas", "Leaderboard"])
     
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
 
