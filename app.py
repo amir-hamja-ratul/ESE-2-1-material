@@ -13,7 +13,7 @@ import io
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Advanced Premium UI/UX CSS & Glassmorphism for Tabs
+# Advanced Premium UI/UX CSS with Glassmorphism Tabs
 st.markdown("""
 <style>
     /* Google Fonts Import */
@@ -120,28 +120,35 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* Glassmorphism Styling for Tabs */
-    div[data-baseweb="tab-list"] {
+    /* Glassmorphism Container & Tabs Styling */
+    [data-testid="stTabs"] {
         background: rgba(255, 255, 255, 0.08) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
         border-radius: 16px !important;
-        padding: 8px !important;
-        gap: 8px !important;
+        padding: 12px !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
     }
-    div[data-baseweb="tab"] {
+    [data-baseweb="tab-list"] {
+        gap: 8px !important;
+        background-color: transparent !important;
+    }
+    [data-baseweb="tab"] {
         border-radius: 10px !important;
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         color: inherit !important;
-        font-weight: 600 !important;
-        padding: 10px 18px !important;
+        padding: 8px 16px !important;
         transition: all 0.3s ease !important;
     }
-    div[data-baseweb="tab"][aria-selected="true"] {
-        background: rgba(255, 255, 255, 0.2) !important;
+    [data-baseweb="tab"][aria-selected="true"] {
+        background: rgba(255, 255, 255, 0.25) !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+        font-weight: 600 !important;
+    }
+    [data-baseweb="tab-highlight"] {
+        display: none !important;
     }
 
     /* Premium Button Styling */
