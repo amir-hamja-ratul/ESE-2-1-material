@@ -16,30 +16,31 @@ st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓"
 # Advanced Premium UI/UX CSS
 st.markdown("""
 <style>
-/* ট্যাবগুলোর মূল কন্টেইনারকে গ্লাস বক্স করা */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 10px;
-    border-radius: 16px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+/* ট্যাব লিস্টের মূল ব্যাকগ্রাউন্ড এবং গ্লাস ইফেক্ট জোরদার করা */
+div[data-testid="stHorizontalBlock"] div[data-baseweb="tab-list"] {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 16px !important;
+    padding: 8px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
 }
 
-/* প্রতিটি ট্যাবের সাধারণ লুক */
-.stTabs [data-baseweb="tab"] {
-    border-radius: 10px;
-    font-weight: 500;
-    transition: all 0.3s ease;
+/* প্রতিটি ট্যাবের টেক্সট ও প্যাডিং সুন্দর করা */
+div[data-baseweb="tab"] {
+    border-radius: 10px !important;
+    color: inherit !important;
+    transition: all 0.3s ease !important;
 }
 
-/* সিলেক্ট করা বা অ্যাক্টিভ ট্যাবের গ্লাস ইফেক্ট */
-.stTabs [aria-selected="true"] {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+/* সিলেক্ট করা বা অ্যাক্টিভ ট্যাবের স্টাইল */
+div[data-baseweb="tab"][aria-selected="true"] {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
 }
+</style>
+""", unsafe_allow_html=True)
 </style>
 """, unsafe_allow_html=True)
 st.markdown("""
