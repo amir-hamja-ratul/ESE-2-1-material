@@ -13,6 +13,15 @@ import pandas as pd
 
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
+st.markdown(
+    """
+    <head>
+        <link rel="apple-touch-icon" href="https://your-logo-image-url.png">
+        <link rel="icon" href="https://your-logo-image-url.png">
+    </head>
+    """,
+    unsafe_allow_html=True
+)
 
 # Advanced Premium UI/UX CSS: Single Line Orange Buttons
 st.markdown("""
