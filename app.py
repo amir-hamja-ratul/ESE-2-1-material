@@ -278,12 +278,12 @@ def display_pdf(file_path):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- SINGLE LINE HORIZONTAL BUTTON TABS ---
+# --- SINGLE LINE HORIZONTAL BUTTON TABS (Flashcards & Formulas Removed) ---
 tab_selection = st.radio(
     "Navigation Tabs",
     [
         "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", 
-        "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas", "📊 Leaderboard"
+        "🎯 Exam Quiz", "📊 Leaderboard"
     ],
     horizontal=True,
     label_visibility="collapsed"
@@ -355,28 +355,6 @@ elif tab_selection == "🎯 Exam Quiz":
                 docs = vector_store.similarity_search("Important concepts exam questions")
                 quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং বাংলা অনুবাদ যুক্ত করো।")
                 st.markdown(quiz_res)
-        else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
-
-elif tab_selection == "🃏 Flashcards":
-    st.markdown("### 🃏 Quick Revision Flashcards")
-    if st.button("⚡ Generate Study Flashcards", key="flash_btn"):
-        if vector_store:
-            with st.spinner("Crafting flashcards..."):
-                docs = vector_store.similarity_search("Key concepts definitions terms")
-                flash_res = ask_gemini(llm, docs, "১০টি গুরুত্বপূর্ণ Flashcard সহজ ইংরেজিতে (Easy English) বানাও এবং বাংলা ব্যাখ্যা যুক্ত করো।")
-                st.markdown(flash_res)
-        else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
-
-elif tab_selection == "📐 Formulas":
-    st.markdown("### 📐 Key Formulas & Definitions")
-    if st.button("🔍 Extract Important Terms", key="form_btn"):
-        if vector_store:
-            with st.spinner("Scanning for formulas and definitions..."):
-                docs = vector_store.similarity_search("Definitions equations formulas key terms")
-                formula_res = ask_gemini(llm, docs, "গুরুত্বপূর্ণ সংজ্ঞা ও গাণিতিক সূত্রগুলো সহজ ইংরেজিতে লেখো এবং বাংলা অর্থ যুক্ত করো।")
-                st.markdown(formula_res)
         else:
             st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
