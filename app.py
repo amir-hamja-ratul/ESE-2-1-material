@@ -14,7 +14,7 @@ import pandas as pd
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Advanced Premium UI/UX CSS with Fixed Boxed Tabs & No Red Line
+# Advanced Premium UI/UX CSS with Strong Tab Box Styling & Red Line Removal
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -89,26 +89,32 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* --- FIXED TAB BOX DESIGN & REMOVING RED LINE --- */
+    /* --- ULTIMATE FIX: REMOVE RED LINE & MAKE TABS BOX DESIGN --- */
     [data-testid="stTabs"] {
         background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
     }
     
     [data-baseweb="tab-list"] {
-        gap: 10px !important;
+        gap: 8px !important;
         background-color: transparent !important;
         border-bottom: none !important;
     }
 
-    /* প্রতিটি ট্যাবকে বক্স/পিল আকৃতি দেওয়া */
+    /* নিচের লাল/নীল ডিফল্ট ইন্ডিকেটর লাইন চিরতরে লুকিয়ে ফেলা */
+    div[data-baseweb="tab-highlight"], 
+    [data-testid="stTabs"] div[data-baseweb="tab-highlight"] {
+        display: none !important;
+        height: 0px !important;
+        background-color: transparent !important;
+    }
+
+    /* প্রতিটি ট্যাবকে বক্স/বাটন স্টাইল দেওয়া */
     button[data-baseweb="tab"] {
-        border-radius: 12px !important;
+        border-radius: 10px !important;
         background-color: #F1F5F9 !important;
         border: 1px solid #CBD5E1 !important;
         color: #334155 !important;
-        padding: 10px 18px !important;
+        padding: 8px 16px !important;
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
     }
@@ -119,11 +125,6 @@ st.markdown("""
         color: #FFFFFF !important;
         border: 1px solid #4F46E5 !important;
         box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
-    }
-
-    /* নিচের লাল/নীল ডিফল্ট দাগ বা হাইলাইট চিরতরে রিমুভ করা */
-    div[data-baseweb="tab-highlight"] {
-        display: none !important;
     }
     
     .stButton > button {
