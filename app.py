@@ -278,7 +278,7 @@ def display_pdf(file_path):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- SINGLE LINE HORIZONTAL BUTTON TABS ---
+# --- SINGLE LINE HORIZONTAL BUTTON TABS (Flashcards & Formulas Removed) ---
 tab_selection = st.radio(
     "Navigation Tabs",
     [
@@ -292,20 +292,11 @@ tab_selection = st.radio(
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
 vector_store = None
 
-# --- LOADING SYSTEM (st.status) FOR VECTOR STORE ---
 if raw_text.strip():
-    with st.status("🔄 Initializing AI Knowledge Base...", expanded=False) as status:
-        st.write("📄 Splitting text into chunks...")
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        chunks = text_splitter.split_text(raw_text)
-        
-        st.write("🧠 Generating vector embeddings...")
-        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-        
-        st.write("⚡ Building FAISS vector database...")
-        vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-        
-        status.update(label="✅ AI Knowledge Base is ready!", state="complete", expanded=False)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    chunks = text_splitter.split_text(raw_text)
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    vector_store = FAISS.from_texts(chunks, embedding=embeddings)
 
 if tab_selection == "📖 View & Download":
     st.markdown("### 📄 Course Documents Viewer")
@@ -321,7 +312,7 @@ if tab_selection == "📖 View & Download":
         st.markdown("---")
         display_pdf(selected_pdf)
     else:
-        st.warning(f"📌 **{selected_code}** কোর্সের জন্য কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
+        st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
 
 elif tab_selection == "💬 AI Q&A":
     st.markdown("### 💬 Ask Anything About Your Course")
@@ -337,7 +328,7 @@ elif tab_selection == "💬 AI Q&A":
                 st.markdown(user_query)
 
             with st.chat_message("assistant"):
-                with st.spinner("⏳ Searching documents and generating smart response..."):
+                with st.spinner("Generating smart response..."):
                     docs = vector_store.similarity_search(user_query)
                     res = ask_gemini(llm, docs, prompt_with_bilingual)
                     st.markdown(res)
@@ -349,7 +340,7 @@ elif tab_selection == "📝 Smart Summary":
     st.markdown("### 📝 Auto-Generated Course Summary")
     if st.button("✨ Generate Smart Summary", key="sum_btn"):
         if vector_store:
-            with st.spinner("⏳ Analyzing course materials and summarizing..."):
+            with st.spinner("Analyzing and summarizing..."):
                 docs = vector_store.similarity_search("Summary overview main points")
                 summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
                 st.markdown(summary_res)
@@ -360,7 +351,7 @@ elif tab_selection == "🎯 Exam Quiz":
     st.markdown("### 🎯 Exam Preparation Quiz")
     if st.button("📝 Generate Practice Questions", key="quiz_btn"):
         if vector_store:
-            with st.spinner("⏳ Creating practice exam questions..."):
+            with st.spinner("Creating exam questions..."):
                 docs = vector_store.similarity_search("Important concepts exam questions")
                 quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং বাংলা অনুবাদ যুক্ত করো।")
                 st.markdown(quiz_res)
