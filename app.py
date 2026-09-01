@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as str_lib
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -10,12 +10,71 @@ import fitz   # PyMuPDF
 from PIL import Image
 import io
 import pandas as pd
+import time
 
-# Page Config
-st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
+# Page Configuration
+str_lib.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Advanced Premium UI/UX CSS: Single Line Orange Buttons
-st.markdown("""
+# --- STARTUP SPLASH SCREEN LOGIC ---
+if "splash_shown" not in str_lib.session_state:
+    str_lib.session_state.splash_shown = False
+
+if not str_lib.session_state.splash_shown:
+    str_lib.markdown("""
+    <style>
+        .stApp { background-color: #0B0F19; }
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #0B0F19;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999999;
+        }
+        .splash-box {
+            background: #1E293B;
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+    </style>
+    <div class="splash-screen">
+        <div class="splash-box">
+            <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
+        </div>
+        <p style="color: #94A3B8; margin-top: 24px; font-family: sans-serif; font-weight: 600; letter-spacing: 3px; font-size: 0.9rem;">INITIALIZING EDUHUB...</p>
+    </div>
+    """, unsafe_allow_html=True)
+    time.sleep(2.0)
+    str_lib.session_state.splash_shown = True
+    str_lib.rerun()
+
+# --- MASTER BUTTON WRAPPER FUNCTION ---
+def master_button(label, key=None, message="Processing request, please wait..."):
+    """Master wrapper for buttons to automatically show a loading spinner on click."""
+    if str_lib.button(label, key=key):
+        with str_lib.spinner(message):
+            time.sleep(0.4)  # Smooth transition delay
+            return True
+    return False
+
+# Advanced Premium UI/UX CSS
+str_lib.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
     
@@ -89,7 +148,6 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* --- SINGLE LINE ORANGE BUTTON TABS (RADIO) --- */
     div[data-testid="stRadio"] > div {
         display: flex !important;
         flex-direction: row !important;
@@ -101,13 +159,11 @@ st.markdown("""
         width: 100%;
     }
     
-    /* Hide radio circles completely */
     div[data-testid="stRadio"] input[type="radio"],
     div[data-testid="stRadio"] div[data-baseweb="radio"] {
         display: none !important;
     }
 
-    /* Unselected Tab Button Style */
     div[data-testid="stRadio"] label {
         background-color: #F1F5F9 !important;
         border: 1px solid #CBD5E1 !important;
@@ -126,7 +182,6 @@ st.markdown("""
         background-color: #E2E8F0 !important;
     }
 
-    /* Selected Tab Button Style - Orange Gradient */
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {
         background: linear-gradient(135deg, #F97316 0%, #EA580C 100%) !important;
         color: #FFFFFF !important;
@@ -151,8 +206,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Top Header UI
-st.markdown("""
+str_lib.markdown("""
     <div class="header-box">
         <h2>🌱 Department of Environmental Science and Engineering</h2>
         <span class="badge">📚 2nd Year 1st Semester</span>
@@ -177,39 +231,39 @@ COURSES = {
 
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
-with st.sidebar:
-    st.markdown("""
+with str_lib.sidebar:
+    str_lib.markdown("""
         <div style="display: flex; justify-content: center; margin-bottom: 10px;">
             <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
         </div>
     """, unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 20px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
+    str_lib.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 20px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
     
-    selected_option = st.selectbox("📌 Select Course Material", course_options)
+    selected_option = str_lib.selectbox("📌 Select Course Material", course_options)
     selected_code = selected_option.split(" - ")[0]
     selected_title = COURSES[selected_code]
     
-    st.divider()
-    query_params = st.query_params
-    admin_pass = st.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
-    st.markdown("<p style='text-align: center; color: #64748B; font-size: 0.8rem; margin-top: 20px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
+    str_lib.divider()
+    query_params = str_lib.query_params
+    admin_pass = str_lib.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
+    str_lib.markdown("<p style='text-align: center; color: #64748B; font-size: 0.8rem; margin-top: 20px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
 
-st.markdown(f"""
+str_lib.markdown(f"""
     <div class="course-card">
         <h1>🎓 {selected_code}: {selected_title}</h1>
     </div>
 """, unsafe_allow_html=True)
 
 if admin_pass == "285277":
-    st.success("⚡ Admin Mode Enabled: Ready to upload new materials.")
-    uploaded_files = st.file_uploader("📥 Upload Course Materials (PDF format)", accept_multiple_files=True, type="pdf")
+    str_lib.success("⚡ Admin Mode Enabled: Ready to upload new materials.")
+    uploaded_files = str_lib.file_uploader("📥 Upload Course Materials (PDF format)", accept_multiple_files=True, type="pdf")
 else:
     uploaded_files = None
 
-api_key = st.secrets.get("GOOGLE_API_KEY", None)
+api_key = str_lib.secrets.get("GOOGLE_API_KEY", None)
 if not api_key:
-    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets-এ যোগ করুন।")
-    st.stop()
+    str_lib.error("⚠️ GOOGLE_API_KEY is missing! Please add it to Streamlit Secrets.")
+    str_lib.stop()
 os.environ["GOOGLE_API_KEY"] = api_key
 
 folder_code = selected_code.replace(" ", "_")
@@ -236,26 +290,26 @@ elif local_pdfs:
             raw_text += page.extract_text() or ""
 
 if raw_text.strip():
-    col1, col2 = st.columns(2)
+    col1, col2 = str_lib.columns(2)
     with col1:
-        st.markdown(f"""
+        str_lib.markdown(f"""
             <div class="metric-card">
                 <div class="metric-card-val">{files_count}</div>
                 <div class="metric-card-lbl">📂 Loaded Documents</div>
             </div>
         """, unsafe_allow_html=True)
     with col2:
-        st.markdown(f"""
+        str_lib.markdown(f"""
             <div class="metric-card">
                 <div class="metric-card-val">{total_pages}</div>
                 <div class="metric-card-lbl">📄 Total Processed Pages</div>
             </div>
         """, unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
+    str_lib.markdown("<br>", unsafe_allow_html=True)
 
 def ask_gemini(llm, docs, question):
     context = "\n\n".join([doc.page_content for doc in docs])
-    prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
+    prompt = f"Answer the question based on the following context:\n\n{context}\n\nQuestion: {question}"
     response = llm.invoke(prompt)
     if hasattr(response, 'content'):
         if isinstance(response.content, str):
@@ -266,20 +320,20 @@ def ask_gemini(llm, docs, question):
 
 def display_pdf(file_path):
     doc = fitz.open(file_path)
-    st.info(f"📖 **Displaying Total Pages:** {len(doc)}")
+    str_lib.info(f"📖 **Displaying Total Pages:** {len(doc)}")
     for page_num in range(len(doc)):
         page = doc.load_page(page_num)
         pix = page.get_pixmap(dpi=150)
         img_bytes = pix.tobytes("png")
         image = Image.open(io.BytesIO(img_bytes))
-        st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        str_lib.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
+        str_lib.markdown("<br>", unsafe_allow_html=True)
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "messages" not in str_lib.session_state:
+    str_lib.session_state.messages = []
 
-# --- SINGLE LINE HORIZONTAL BUTTON TABS (Flashcards & Formulas Removed) ---
-tab_selection = st.radio(
+# --- SINGLE LINE HORIZONTAL BUTTON TABS ---
+tab_selection = str_lib.radio(
     "Navigation Tabs",
     [
         "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", 
@@ -292,76 +346,85 @@ tab_selection = st.radio(
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
 vector_store = None
 
+# --- LOADING SYSTEM (st.status) FOR VECTOR STORE ---
 if raw_text.strip():
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = text_splitter.split_text(raw_text)
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+    with str_lib.status("🔄 Initializing AI Knowledge Base...", expanded=False) as status:
+        str_lib.write("📄 Splitting text into chunks...")
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        chunks = text_splitter.split_text(raw_text)
+        
+        str_lib.write("🧠 Generating vector embeddings...")
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        
+        str_lib.write("⚡ Building FAISS vector database...")
+        vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+        
+        status.update(label="✅ AI Knowledge Base is ready!", state="complete", expanded=False)
 
 if tab_selection == "📖 View & Download":
-    st.markdown("### 📄 Course Documents Viewer")
+    str_lib.markdown("### 📄 Course Documents Viewer")
     if local_pdfs:
-        selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
+        selected_pdf = str_lib.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
         with open(selected_pdf, "rb") as f:
-            st.download_button(
-                label=f"📥 Download File",
+            str_lib.download_button(
+                label="📥 Download File",
                 data=f,
                 file_name=os.path.basename(selected_pdf),
                 mime="application/pdf"
             )
-        st.markdown("---")
+        str_lib.markdown("---")
         display_pdf(selected_pdf)
     else:
-        st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
+        str_lib.warning(f"📌 No local PDF files found for **{selected_code}**.")
 
 elif tab_selection == "💬 AI Q&A":
-    st.markdown("### 💬 Ask Anything About Your Course")
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    str_lib.markdown("### 💬 Ask Anything About Your Course")
+    for message in str_lib.session_state.messages:
+        with str_lib.chat_message(message["role"]):
+            str_lib.markdown(message["content"])
 
-    if user_query := st.chat_input("Type your question here..."):
+    if user_query := str_lib.chat_input("Type your question here..."):
         if vector_store:
-            prompt_with_bilingual = f"{user_query}\n\n[অর্ডার: উত্তরটি প্রথমে সহজ ইংরেজিতে (Easy English) দেবে এবং সাথে সাথেই তার বাংলা অনুবাদ (Bangla Translation) নিচে যুক্ত করবে।]"
-            st.session_state.messages.append({"role": "user", "content": user_query})
-            with st.chat_message("user"):
-                st.markdown(user_query)
+            prompt_with_bilingual = f"{user_query}\n\n[Instruction: Provide the answer clearly in easy English, followed by its clear translation.]"
+            str_lib.session_state.messages.append({"role": "user", "content": user_query})
+            with str_lib.chat_message("user"):
+                str_lib.markdown(user_query)
 
-            with st.chat_message("assistant"):
-                with st.spinner("Generating smart response..."):
+            with str_lib.chat_message("assistant"):
+                with str_lib.spinner("⏳ Searching documents and generating smart response..."):
                     docs = vector_store.similarity_search(user_query)
                     res = ask_gemini(llm, docs, prompt_with_bilingual)
-                    st.markdown(res)
-                    st.session_state.messages.append({"role": "assistant", "content": res})
+                    str_lib.markdown(res)
+                    str_lib.session_state.messages.append({"role": "assistant", "content": res})
         else:
-            st.error("⚠️ আগে ডকুমেন্ট আপলোড করুন বা ফোল্ডারে ফাইল রাখুন যাতে AI সার্চ করতে পারে।")
+            str_lib.error("⚠️ Please upload documents or place files in the course folder first so the AI can search.")
 
 elif tab_selection == "📝 Smart Summary":
-    st.markdown("### 📝 Auto-Generated Course Summary")
-    if st.button("✨ Generate Smart Summary", key="sum_btn"):
+    str_lib.markdown("### 📝 Auto-Generated Course Summary")
+    # Using master_button for automated loading spinner
+    if master_button("✨ Generate Smart Summary", key="sum_btn", message="Analyzing course materials and summarizing..."):
         if vector_store:
-            with st.spinner("Analyzing and summarizing..."):
-                docs = vector_store.similarity_search("Summary overview main points")
-                summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
-                st.markdown(summary_res)
+            docs = vector_store.similarity_search("Summary overview main points")
+            summary_res = ask_gemini(llm, docs, "Provide the main content in bullet points in easy English, with translations included.")
+            str_lib.markdown(summary_res)
         else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
+            str_lib.warning("⚠️ Insufficient document data available.")
 
 elif tab_selection == "🎯 Exam Quiz":
-    st.markdown("### 🎯 Exam Preparation Quiz")
-    if st.button("📝 Generate Practice Questions", key="quiz_btn"):
+    str_lib.markdown("### 🎯 Exam Preparation Quiz")
+    # Using master_button for automated loading spinner
+    if master_button("📝 Generate Practice Questions", key="quiz_btn", message="Creating practice exam questions..."):
         if vector_store:
-            with st.spinner("Creating exam questions..."):
-                docs = vector_store.similarity_search("Important concepts exam questions")
-                quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং বাংলা অনুবাদ যুক্ত করো।")
-                st.markdown(quiz_res)
+            docs = vector_store.similarity_search("Important concepts exam questions")
+            quiz_res = ask_gemini(llm, docs, "Create 5 important exam questions with answers in easy English and include translations.")
+            str_lib.markdown(quiz_res)
         else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
+            str_lib.warning("⚠️ Insufficient document data available.")
 
 elif tab_selection == "📊 Leaderboard":
-    st.markdown("### 📊 Department of Environmental Science and Engineering")
-    st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
-    st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
+    str_lib.markdown("### 📊 Department of Environmental Science and Engineering")
+    str_lib.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
+    str_lib.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
 
     courses = [
         "ESE 2101: Hydrology and Hydrogeology",
@@ -379,7 +442,7 @@ elif tab_selection == "📊 Leaderboard":
         "MEQ: Mid Exam Questions"
     ]
 
-    selected_course = st.selectbox("📚 কোর্স সিলেক্ট করুন:", courses, key="internal_course_select")
+    selected_course = str_lib.selectbox("📚 Select Course:", courses, key="internal_course_select")
 
     if selected_course.startswith("ESE 2101"):
         data = {
@@ -406,6 +469,6 @@ elif tab_selection == "📊 Leaderboard":
         df_internal = pd.DataFrame(data)
         df_internal = df_internal.sort_values(by="Total Marks (40)", ascending=False).reset_index(drop=True)
         df_internal.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_internal) + 1)])
-        st.dataframe(df_internal, use_container_width=True, hide_index=True)
+        str_lib.dataframe(df_internal, use_container_width=True, hide_index=True)
     else:
-        st.info(f"📌 **{selected_course}** কোর্সের ইন্টারনাল মার্কশিট শিঘ্রই যুক্ত করা হবে।")
+        str_lib.info(f"📌 Internal mark sheet for **{selected_course}** will be added soon.")
