@@ -16,8 +16,8 @@ st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓"
 st.markdown(
     """
     <head>
-        <link rel="apple-touch-icon" href="https://ibb.co.com/Y7QwCQbH">
-        <link rel="icon" href="https://ibb.co.com/Y7QwCQbH">
+        <link rel="apple-touch-icon" href="https://i.ibb.co.com/8DstCsX1/attachment-158389628.png">
+        <link rel="icon" href="https://i.ibb.co.com/8DstCsX1/attachment-158389628.png">
     </head>
     """,
     unsafe_allow_html=True
