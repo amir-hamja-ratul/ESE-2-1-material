@@ -14,7 +14,7 @@ import pandas as pd
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Advanced Premium UI/UX CSS: Radio Buttons Styled as Download Buttons
+# Advanced Premium UI/UX CSS: Single Line Orange Buttons
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -89,51 +89,49 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* --- RADIO BUTTONS TRANSFORMED INTO DOWNLOAD BUTTON TABS --- */
-    /* Hide radio indicator circles */
-    div[data-testid="stRadio"] input[type="radio"] {
-        display: none !important;
-    }
-    
+    /* --- SINGLE LINE ORANGE BUTTON TABS (RADIO) --- */
     div[data-testid="stRadio"] > div {
         display: flex !important;
         flex-direction: row !important;
-        gap: 10px !important;
-        flex-wrap: wrap !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        gap: 8px !important;
         background: transparent !important;
         padding-bottom: 10px !important;
+        width: 100%;
+    }
+    
+    /* Hide radio circles completely */
+    div[data-testid="stRadio"] input[type="radio"],
+    div[data-testid="stRadio"] div[data-baseweb="radio"] {
+        display: none !important;
     }
 
     /* Unselected Tab Button Style */
     div[data-testid="stRadio"] label {
         background-color: #F1F5F9 !important;
         border: 1px solid #CBD5E1 !important;
-        border-radius: 14px !important;
-        padding: 10px 18px !important;
+        border-radius: 12px !important;
+        padding: 8px 14px !important;
         color: #334155 !important;
         font-weight: 600 !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03) !important;
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
         cursor: pointer !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transition: all 0.2s ease !important;
     }
 
     div[data-testid="stRadio"] label:hover {
         background-color: #E2E8F0 !important;
-        transform: translateY(-1px);
     }
 
-    /* Selected Tab Button Style - Exactly like the green download button */
-    div[data-testid="stRadio"] input[type="radio"]:checked + div {
-        color: #FFFFFF !important;
-    }
-    
-    /* Target the parent label of the checked radio */
+    /* Selected Tab Button Style - Orange Gradient */
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {
-        background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+        background: linear-gradient(135deg, #F97316 0%, #EA580C 100%) !important;
         color: #FFFFFF !important;
-        border: 1px solid #059669 !important;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
-        transform: translateY(-2px);
+        border: 1px solid #EA580C !important;
+        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35) !important;
     }
 
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p {
@@ -280,7 +278,7 @@ def display_pdf(file_path):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CUSTOM TABS USING RADIO BUTTONS (NO RED LINES) ---
+# --- SINGLE LINE HORIZONTAL BUTTON TABS ---
 tab_selection = st.radio(
     "Navigation Tabs",
     [
