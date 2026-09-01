@@ -9,20 +9,31 @@ import glob
 import fitz   # PyMuPDF
 from PIL import Image
 import io
-import pandas as pd
 
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Advanced Premium UI/UX CSS with Strong Tab Box Styling & Red Line Removal
+# Advanced Premium UI/UX CSS & Glassmorphism for Tabs
 st.markdown("""
 <style>
+    /* Google Fonts Import */
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
     
     html, body, [class*="css"] { 
         font-family: 'Outfit', sans-serif; 
     }
+    
+    /* Animations */
+    @keyframes fadeInUp {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+        0% { opacity: 0; transform: scale(0.95); }
+        100% { opacity: 1; transform: scale(1); }
+    }
 
+    /* Department Banner Header (Glassmorphism inspired) */
     .header-box {
         background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
         backdrop-filter: blur(10px);
@@ -33,11 +44,13 @@ st.markdown("""
         margin-bottom: 24px;
         box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
         border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: fadeInUp 0.6s ease-out;
     }
     .header-box h2 {
         color: #FFFFFF !important;
         font-size: 1.8rem;
         font-weight: 700;
+        letter-spacing: -0.5px;
         margin: 0 0 12px 0;
     }
     .badge {
@@ -48,8 +61,10 @@ st.markdown("""
         padding: 6px 18px;
         border-radius: 30px;
         display: inline-block;
+        box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
     }
     
+    /* Hero Title Card */
     .course-card {
         background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
         padding: 26px 32px;
@@ -57,21 +72,37 @@ st.markdown("""
         color: white;
         margin-bottom: 28px;
         box-shadow: 0 12px 25px -8px rgba(79, 70, 229, 0.4);
+        animation: scaleIn 0.5s ease-out 0.2s both;
     }
     .course-card h1 {
         color: #FFFFFF !important;
         font-size: 2rem;
         font-weight: 700;
         margin: 0;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
+    /* 3D Interactive Metric Cards */
+    .metric-container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
     .metric-card {
+        flex: 1;
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
         border-radius: 16px;
         padding: 24px;
         text-align: center;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        animation: fadeInUp 0.5s ease-out 0.4s both;
+    }
+    .metric-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        border-color: #818CF8;
     }
     .metric-card-val {
         font-size: 2.5rem;
@@ -89,52 +120,58 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* --- ULTIMATE FIX: REMOVE RED LINE & MAKE TABS BOX DESIGN --- */
-    [data-testid="stTabs"] {
-        background: transparent !important;
-    }
-    
-    [data-baseweb="tab-list"] {
+    /* Glassmorphism Styling for Tabs */
+    div[data-baseweb="tab-list"] {
+        background: rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 16px !important;
+        padding: 8px !important;
         gap: 8px !important;
-        background-color: transparent !important;
-        border-bottom: none !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
     }
-
-    /* নিচের লাল/নীল ডিফল্ট ইন্ডিকেটর লাইন চিরতরে লুকিয়ে ফেলা */
-    div[data-baseweb="tab-highlight"], 
-    [data-testid="stTabs"] div[data-baseweb="tab-highlight"] {
-        display: none !important;
-        height: 0px !important;
-        background-color: transparent !important;
-    }
-
-    /* প্রতিটি ট্যাবকে বক্স/বাটন স্টাইল দেওয়া */
-    button[data-baseweb="tab"] {
+    div[data-baseweb="tab"] {
         border-radius: 10px !important;
-        background-color: #F1F5F9 !important;
-        border: 1px solid #CBD5E1 !important;
-        color: #334155 !important;
-        padding: 8px 16px !important;
+        color: inherit !important;
         font-weight: 600 !important;
+        padding: 10px 18px !important;
         transition: all 0.3s ease !important;
     }
-
-    /* সিলেক্ট করা বা অ্যাক্টিভ ট্যাবের ডিজাইন */
-    button[data-baseweb="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%) !important;
-        color: #FFFFFF !important;
-        border: 1px solid #4F46E5 !important;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
+    div[data-baseweb="tab"][aria-selected="true"] {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
     }
-    
-    .stButton > button {
+
+    /* Premium Button Styling */
+    .stButton > button, [data-testid="stDownloadButton"] > button {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
         color: white !important;
         border-radius: 12px !important;
         padding: 10px 24px !important;
         font-weight: 600 !important;
         border: none !important;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important;
+        transition: all 0.3s ease !important;
         width: 100%;
+    }
+    .stButton > button:hover, [data-testid="stDownloadButton"] > button:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        box-shadow: 0 8px 15px rgba(16, 185, 129, 0.4) !important;
+    }
+
+    /* Custom style for Sidebar Collapse/Expand Menu Button */
+    [data-testid="collapsedControl"] {
+        background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
+        color: #FFFFFF !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3) !important;
+        margin: 10px 0 0 10px !important;
+        padding: 4px !important;
+    }
+    [data-testid="collapsedControl"] svg {
+        fill: #FFFFFF !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -171,6 +208,7 @@ with st.sidebar:
             <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
         </div>
     """, unsafe_allow_html=True)
+    
     st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 20px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
     
     selected_option = st.selectbox("📌 Select Course Material", course_options)
@@ -178,10 +216,13 @@ with st.sidebar:
     selected_title = COURSES[selected_code]
     
     st.divider()
+    
     query_params = st.query_params
     admin_pass = st.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
+    
     st.markdown("<p style='text-align: center; color: #64748B; font-size: 0.8rem; margin-top: 20px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
 
+# Course Title Banner
 st.markdown(f"""
     <div class="course-card">
         <h1>🎓 {selected_code}: {selected_title}</h1>
@@ -193,6 +234,32 @@ if admin_pass == "285277":
     uploaded_files = st.file_uploader("📥 Upload Course Materials (PDF format)", accept_multiple_files=True, type="pdf")
 else:
     uploaded_files = None
+
+def ask_gemini(llm, docs, question):
+    context = "\n\n".join([doc.page_content for doc in docs])
+    prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
+    response = llm.invoke(prompt)
+    if hasattr(response, 'content'):
+        if isinstance(response.content, str):
+            return response.content
+        elif isinstance(response.content, list):
+            return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
+    return str(response)
+
+def display_pdf(file_path):
+    doc = fitz.open(file_path)
+    st.info(f"📖 **Displaying Total Pages:** {len(doc)}")
+    
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        pix = page.get_pixmap(dpi=150)
+        img_bytes = pix.tobytes("png")
+        image = Image.open(io.BytesIO(img_bytes))
+        st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 api_key = st.secrets.get("GOOGLE_API_KEY", None)
 if not api_key:
@@ -239,72 +306,43 @@ if raw_text.strip():
                 <div class="metric-card-lbl">📄 Total Processed Pages</div>
             </div>
         """, unsafe_allow_html=True)
+
     st.markdown("<br>", unsafe_allow_html=True)
 
-def ask_gemini(llm, docs, question):
-    context = "\n\n".join([doc.page_content for doc in docs])
-    prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
-    response = llm.invoke(prompt)
-    if hasattr(response, 'content'):
-        if isinstance(response.content, str):
-            return response.content
-        elif isinstance(response.content, list):
-            return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
-    return str(response)
+    with st.spinner("🤖 AI is reading your documents..."):
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        chunks = text_splitter.split_text(raw_text)
+        
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+    
+    tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas", "Leaderboard"])
+    
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
 
-def display_pdf(file_path):
-    doc = fitz.open(file_path)
-    st.info(f"📖 **Displaying Total Pages:** {len(doc)}")
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        pix = page.get_pixmap(dpi=150)
-        img_bytes = pix.tobytes("png")
-        image = Image.open(io.BytesIO(img_bytes))
-        st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+    with tab0:
+        st.markdown("### 📄 Course Documents Viewer")
+        if local_pdfs:
+            selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
+            
+            with open(selected_pdf, "rb") as f:
+                st.download_button(
+                    label=f"📥 Download File",
+                    data=f,
+                    file_name=os.path.basename(selected_pdf),
+                    mime="application/pdf"
+                )
+            
+            st.markdown("---")
+            display_pdf(selected_pdf)
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    with tab1:
+        st.markdown("### 💬 Ask Anything About Your Course")
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-# --- ALL TABS CREATED AT TOP LEVEL TO PREVENT CRASHES ---
-tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", 
-    "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas", "📊 Leaderboard"
-])
-
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
-vector_store = None
-
-if raw_text.strip():
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = text_splitter.split_text(raw_text)
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-
-with tab0:
-    st.markdown("### 📄 Course Documents Viewer")
-    if local_pdfs:
-        selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
-        with open(selected_pdf, "rb") as f:
-            st.download_button(
-                label=f"📥 Download File",
-                data=f,
-                file_name=os.path.basename(selected_pdf),
-                mime="application/pdf"
-            )
-        st.markdown("---")
-        display_pdf(selected_pdf)
-    else:
-        st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
-
-with tab1:
-    st.markdown("### 💬 Ask Anything About Your Course")
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    if user_query := st.chat_input("Type your question here..."):
-        if vector_store:
+        if user_query := st.chat_input("Type your question here..."):
             prompt_with_bilingual = f"{user_query}\n\n[অর্ডার: উত্তরটি প্রথমে সহজ ইংরেজিতে (Easy English) দেবে এবং সাথে সাথেই তার বাংলা অনুবাদ (Bangla Translation) নিচে যুক্ত করবে।]"
             st.session_state.messages.append({"role": "user", "content": user_query})
             with st.chat_message("user"):
@@ -316,54 +354,44 @@ with tab1:
                     res = ask_gemini(llm, docs, prompt_with_bilingual)
                     st.markdown(res)
                     st.session_state.messages.append({"role": "assistant", "content": res})
-        else:
-            st.error("⚠️ আগে ডকুমেন্ট আপলোড করুন বা ফোল্ডারে ফাইল রাখুন যাতে AI সার্চ করতে পারে।")
 
-with tab2:
-    st.markdown("### 📝 Auto-Generated Course Summary")
-    if st.button("✨ Generate Smart Summary", key="sum_btn"):
-        if vector_store:
+    with tab2:
+        st.markdown("### 📝 Auto-Generated Course Summary")
+        if st.button("✨ Generate Smart Summary"):
             with st.spinner("Analyzing and summarizing..."):
                 docs = vector_store.similarity_search("Summary overview main points")
                 summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
                 st.markdown(summary_res)
-        else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-with tab3:
-    st.markdown("### 🎯 Exam Preparation Quiz")
-    if st.button("📝 Generate Practice Questions", key="quiz_btn"):
-        if vector_store:
+    with tab3:
+        st.markdown("### 🎯 Exam Preparation Quiz")
+        if st.button("📝 Generate Practice Questions"):
             with st.spinner("Creating exam questions..."):
                 docs = vector_store.similarity_search("Important concepts exam questions")
                 quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং বাংলা অনুবাদ যুক্ত করো।")
                 st.markdown(quiz_res)
-        else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-with tab4:
-    st.markdown("### 🃏 Quick Revision Flashcards")
-    if st.button("⚡ Generate Study Flashcards", key="flash_btn"):
-        if vector_store:
+    with tab4:
+        st.markdown("### 🃏 Quick Revision Flashcards")
+        if st.button("⚡ Generate Study Flashcards"):
             with st.spinner("Crafting flashcards..."):
                 docs = vector_store.similarity_search("Key concepts definitions terms")
                 flash_res = ask_gemini(llm, docs, "১০টি গুরুত্বপূর্ণ Flashcard সহজ ইংরেজিতে (Easy English) বানাও এবং বাংলা ব্যাখ্যা যুক্ত করো।")
                 st.markdown(flash_res)
-        else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-with tab5:
-    st.markdown("### 📐 Key Formulas & Definitions")
-    if st.button("🔍 Extract Important Terms", key="form_btn"):
-        if vector_store:
+    with tab5:
+        st.markdown("### 📐 Key Formulas & Definitions")
+        if st.button("🔍 Extract Important Terms"):
             with st.spinner("Scanning for formulas and definitions..."):
                 docs = vector_store.similarity_search("Definitions equations formulas key terms")
                 formula_res = ask_gemini(llm, docs, "গুরুত্বপূর্ণ সংজ্ঞা ও গাণিতিক সূত্রগুলো সহজ ইংরেজিতে লেখো এবং বাংলা অর্থ যুক্ত করো।")
                 st.markdown(formula_res)
-        else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
+else:
+    st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো ডকুমেন্ট লোড করা নেই।")
 
 with tab6:
+    import pandas as pd
+
     st.markdown("### 📊 Department of Environmental Science and Engineering")
     st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
     st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
@@ -409,8 +437,11 @@ with tab6:
             "Total Marks (40)": [37, 32, 34, 34, 36, 33, 37, 36, 33, 34, 34, 36, 35, 36, 30, 38, 36, 35, 36, 38, 40, 33, 37, 38, 39, 37, 37]
         }
         df_internal = pd.DataFrame(data)
+        
+        # Sort by Total Marks (Highest to Lowest) and add Rank column
         df_internal = df_internal.sort_values(by="Total Marks (40)", ascending=False).reset_index(drop=True)
         df_internal.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_internal) + 1)])
+        
         st.dataframe(df_internal, use_container_width=True, hide_index=True)
     else:
         st.info(f"📌 **{selected_course}** কোর্সের ইন্টারনাল মার্কশিট শিঘ্রই যুক্ত করা হবে।")
