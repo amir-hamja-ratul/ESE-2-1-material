@@ -14,7 +14,7 @@ import pandas as pd
 # Page Config
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
 
-# Advanced Premium UI/UX CSS: Tabs Styled Exactly Like Download Buttons
+# Advanced Premium UI/UX CSS: Radio Buttons Styled as Download Buttons
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -89,54 +89,57 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* --- TABS COMPLETELY TRANSFORMED INTO DOWNLOAD BUTTONS --- */
-    .stTabs {
-        background: transparent !important;
+    /* --- RADIO BUTTONS TRANSFORMED INTO DOWNLOAD BUTTON TABS --- */
+    /* Hide radio indicator circles */
+    div[data-testid="stRadio"] input[type="radio"] {
+        display: none !important;
     }
     
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 12px !important;
-        background-color: transparent !important;
-        border-bottom: none !important;
-        padding-bottom: 12px !important;
-    }
-
-    /* Remove Streamlit default red/blue underline and highlight line completely */
-    .stTabs [data-baseweb="tab-highlight"], 
-    .stTabs div[data-baseweb="tab-highlight"] {
-        display: none !important;
-        height: 0px !important;
+    div[data-testid="stRadio"] > div {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 10px !important;
+        flex-wrap: wrap !important;
         background: transparent !important;
+        padding-bottom: 10px !important;
     }
 
-    /* Style for each tab item to look like an unselected button */
-    .stTabs [data-baseweb="tab"] {
-        height: 45px !important;
-        border-radius: 14px !important;
+    /* Unselected Tab Button Style */
+    div[data-testid="stRadio"] label {
         background-color: #F1F5F9 !important;
         border: 1px solid #CBD5E1 !important;
+        border-radius: 14px !important;
+        padding: 10px 18px !important;
         color: #334155 !important;
-        padding: 0px 20px !important;
         font-weight: 600 !important;
         box-shadow: 0 2px 5px rgba(0,0,0,0.03) !important;
+        cursor: pointer !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
 
-    .stTabs [data-baseweb="tab"]:hover {
+    div[data-testid="stRadio"] label:hover {
         background-color: #E2E8F0 !important;
-        border-color: #94A3B8 !important;
         transform: translateY(-1px);
     }
 
-    /* Active Tab styling - Exact match with the green download button */
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+    /* Selected Tab Button Style - Exactly like the green download button */
+    div[data-testid="stRadio"] input[type="radio"]:checked + div {
+        color: #FFFFFF !important;
+    }
+    
+    /* Target the parent label of the checked radio */
+    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
         color: #FFFFFF !important;
         border: 1px solid #059669 !important;
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
         transform: translateY(-2px);
     }
-    
+
+    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p {
+        color: #FFFFFF !important;
+    }
+
     .stButton > button, [data-testid="stDownloadButton"] > button {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
         color: white !important;
@@ -277,11 +280,16 @@ def display_pdf(file_path):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- ALL TABS CREATED AT TOP LEVEL ---
-tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", 
-    "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas", "📊 Leaderboard"
-])
+# --- CUSTOM TABS USING RADIO BUTTONS (NO RED LINES) ---
+tab_selection = st.radio(
+    "Navigation Tabs",
+    [
+        "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", 
+        "🎯 Exam Quiz", "🃏 Flashcards", "📐 Formulas", "📊 Leaderboard"
+    ],
+    horizontal=True,
+    label_visibility="collapsed"
+)
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
 vector_store = None
@@ -292,7 +300,7 @@ if raw_text.strip():
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
 
-with tab0:
+if tab_selection == "📖 View & Download":
     st.markdown("### 📄 Course Documents Viewer")
     if local_pdfs:
         selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
@@ -308,7 +316,7 @@ with tab0:
     else:
         st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
 
-with tab1:
+elif tab_selection == "💬 AI Q&A":
     st.markdown("### 💬 Ask Anything About Your Course")
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -330,7 +338,7 @@ with tab1:
         else:
             st.error("⚠️ আগে ডকুমেন্ট আপলোড করুন বা ফোল্ডারে ফাইল রাখুন যাতে AI সার্চ করতে পারে।")
 
-with tab2:
+elif tab_selection == "📝 Smart Summary":
     st.markdown("### 📝 Auto-Generated Course Summary")
     if st.button("✨ Generate Smart Summary", key="sum_btn"):
         if vector_store:
@@ -341,7 +349,7 @@ with tab2:
         else:
             st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-with tab3:
+elif tab_selection == "🎯 Exam Quiz":
     st.markdown("### 🎯 Exam Preparation Quiz")
     if st.button("📝 Generate Practice Questions", key="quiz_btn"):
         if vector_store:
@@ -352,7 +360,7 @@ with tab3:
         else:
             st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-with tab4:
+elif tab_selection == "🃏 Flashcards":
     st.markdown("### 🃏 Quick Revision Flashcards")
     if st.button("⚡ Generate Study Flashcards", key="flash_btn"):
         if vector_store:
@@ -363,7 +371,7 @@ with tab4:
         else:
             st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-with tab5:
+elif tab_selection == "📐 Formulas":
     st.markdown("### 📐 Key Formulas & Definitions")
     if st.button("🔍 Extract Important Terms", key="form_btn"):
         if vector_store:
@@ -374,7 +382,7 @@ with tab5:
         else:
             st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-with tab6:
+elif tab_selection == "📊 Leaderboard":
     st.markdown("### 📊 Department of Environmental Science and Engineering")
     st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
     st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
