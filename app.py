@@ -132,6 +132,29 @@ st.markdown("""
         font-size: 0.6rem;
     }
 
+    /* ---------------- UNIVERSITY LOGO (top-right corner of header) ---------------- */
+    .uni-logo-corner {
+        position: absolute;
+        top: 18px;
+        right: 22px;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.92);
+        padding: 6px;
+        box-shadow: 0 8px 20px -4px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15);
+        z-index: 2;
+        object-fit: contain;
+    }
+    @media (max-width: 768px) {
+        .uni-logo-corner {
+            width: 46px;
+            height: 46px;
+            top: 12px;
+            right: 12px;
+        }
+    }
+
     /* ---------------- COURSE TITLE CARD ---------------- */
     .course-card {
         background: linear-gradient(120deg, #6D5DFC 0%, #5847E8 55%, #4C3FD7 100%);
@@ -385,8 +408,25 @@ st.markdown("""
 # ==========================================================
 # TOP HEADER UI
 # ==========================================================
-st.markdown("""
+import base64
+
+def _load_logo_b64():
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "university_logo.png")
+    try:
+        with open(logo_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except FileNotFoundError:
+        return ""
+
+_logo_b64 = _load_logo_b64()
+_logo_html = (
+    f'<img src="data:image/png;base64,{_logo_b64}" class="uni-logo-corner">'
+    if _logo_b64 else ""
+)
+
+st.markdown(f"""
     <div class="header-box">
+        {_logo_html}
         <h2>🌱 Department of Environmental Science and Engineering</h2>
         <span class="badge">📚 2nd Year 1st Semester</span>
     </div>
