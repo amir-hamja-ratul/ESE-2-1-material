@@ -413,8 +413,8 @@ course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 with st.sidebar:
     st.markdown("""
         <div style="display: flex; justify-content: center; margin-bottom: 14px; margin-top: 6px;">
-            <div style="width: 84px; height: 84px; border-radius: 22px; background: linear-gradient(135deg, #6D5DFC, #22D3EE); display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 26px -6px rgba(109,93,252,0.55); border: 1px solid rgba(255,255,255,0.15);">
-                <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="46" style="filter: brightness(0) invert(1);">
+            <div style="width: 84px; height: 84px; border-radius: 22px; background: linear-gradient(135deg, #6D5DFC, #22D3EE); display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 26px -6px rgba(109,93,252,0.55); border: 1px solid rgba(255,255,255,0.15); font-size: 2.4rem; line-height: 1;">
+                🎓
             </div>
         </div>
     """, unsafe_allow_html=True)
