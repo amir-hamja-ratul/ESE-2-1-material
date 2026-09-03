@@ -11,8 +11,11 @@ from PIL import Image
 import io
 import pandas as pd
 
-# Page Config
+# ==========================================================
+# PAGE CONFIG
+# ==========================================================
 st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
+
 st.markdown(
     """
     <head>
@@ -23,144 +26,255 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Advanced Premium UI/UX CSS: Single Line Orange Buttons
+# ==========================================================
+# PREMIUM PROFESSIONAL UI/UX CSS
+# ==========================================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-    
-    html, body, [class*="css"] { 
-        font-family: 'Outfit', sans-serif; 
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --primary: #4F46E5;
+        --primary-dark: #3730A3;
+        --primary-light: #818CF8;
+        --accent: #06B6D4;
+        --accent-2: #F97316;
+        --success: #10B981;
+        --bg-soft: #F8FAFC;
+        --surface: #FFFFFF;
+        --border: #E2E8F0;
+        --text-main: #0F172A;
+        --text-muted: #64748B;
+        --radius-lg: 20px;
+        --radius-md: 14px;
+        --radius-sm: 10px;
+        --shadow-soft: 0 4px 20px -4px rgba(15, 23, 42, 0.08);
+        --shadow-elevated: 0 20px 40px -12px rgba(79, 70, 229, 0.25);
     }
 
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+    }
+
+    .stApp {
+        background: linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 100%);
+    }
+
+    /* Hide Streamlit chrome for a cleaner look */
+    #MainMenu, footer, header[data-testid="stHeader"] { visibility: hidden; height: 0; }
+
+    /* ---------------- HERO HEADER ---------------- */
     .header-box {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
-        backdrop-filter: blur(10px);
-        padding: 28px 24px;
-        border-radius: 20px;
+        background:
+            radial-gradient(circle at 15% 20%, rgba(129, 140, 248, 0.35), transparent 45%),
+            radial-gradient(circle at 85% 80%, rgba(6, 182, 212, 0.3), transparent 45%),
+            linear-gradient(135deg, #0F172A 0%, #1E1B4B 55%, #1E293B 100%);
+        padding: 40px 32px;
+        border-radius: var(--radius-lg);
         text-align: center;
         color: white;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-elevated);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        position: relative;
+        overflow: hidden;
     }
     .header-box h2 {
         color: #FFFFFF !important;
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin: 0 0 12px 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        margin: 0 0 14px 0;
+        letter-spacing: -0.02em;
     }
     .badge {
-        background: linear-gradient(90deg, #38BDF8 0%, #3B82F6 100%);
+        background: linear-gradient(90deg, #06B6D4 0%, #4F46E5 100%);
         color: #FFFFFF !important;
-        font-weight: 600;
-        font-size: 0.9rem;
-        padding: 6px 18px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 8px 22px;
         border-radius: 30px;
         display: inline-block;
+        letter-spacing: 0.03em;
+        box-shadow: 0 8px 20px -6px rgba(6, 182, 212, 0.6);
     }
-    
+
+    /* ---------------- COURSE TITLE CARD ---------------- */
     .course-card {
-        background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-        padding: 26px 32px;
-        border-radius: 18px;
+        background: linear-gradient(120deg, #4F46E5 0%, #6366F1 50%, #4338CA 100%);
+        padding: 30px 36px;
+        border-radius: var(--radius-lg);
         color: white;
-        margin-bottom: 28px;
-        box-shadow: 0 12px 25px -8px rgba(79, 70, 229, 0.4);
+        margin-bottom: 30px;
+        box-shadow: var(--shadow-elevated);
+        border: 1px solid rgba(255,255,255,0.12);
+        position: relative;
     }
     .course-card h1 {
         color: #FFFFFF !important;
-        font-size: 2rem;
-        font-weight: 700;
+        font-size: 1.9rem;
+        font-weight: 800;
         margin: 0;
+        letter-spacing: -0.02em;
     }
 
+    /* ---------------- METRIC CARDS ---------------- */
     .metric-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 16px;
-        padding: 24px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 26px 20px;
         text-align: center;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        box-shadow: var(--shadow-soft);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px -8px rgba(79, 70, 229, 0.25);
     }
     .metric-card-val {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #4F46E5, #38BDF8);
+        font-size: 2.6rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #4F46E5, #06B6D4);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
+        line-height: 1;
     }
     .metric-card-lbl {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #64748B;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--text-muted);
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 1.2px;
     }
 
-    /* --- SINGLE LINE ORANGE BUTTON TABS (RADIO) --- */
+    /* ---------------- SIDEBAR ---------------- */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0F172A 0%, #1E1B4B 100%);
+        border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    section[data-testid="stSidebar"] * {
+        color: #E2E8F0 !important;
+    }
+    section[data-testid="stSidebar"] h3 {
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+    }
+    section[data-testid="stSidebar"] .stSelectbox label,
+    section[data-testid="stSidebar"] .stTextInput label {
+        color: #94A3B8 !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+    section[data-testid="stSidebar"] input {
+        background-color: rgba(255,255,255,0.06) !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        border-radius: 10px !important;
+        color: #FFFFFF !important;
+    }
+    section[data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.1) !important;
+    }
+
+    /* ---------------- SINGLE LINE PILL TABS ---------------- */
     div[data-testid="stRadio"] > div {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
-        gap: 8px !important;
+        gap: 10px !important;
         background: transparent !important;
-        padding-bottom: 10px !important;
+        padding: 6px 4px 14px 4px !important;
         width: 100%;
     }
-    
-    /* Hide radio circles completely */
+
     div[data-testid="stRadio"] input[type="radio"],
     div[data-testid="stRadio"] div[data-baseweb="radio"] {
         display: none !important;
     }
 
-    /* Unselected Tab Button Style */
     div[data-testid="stRadio"] label {
-        background-color: #F1F5F9 !important;
-        border: 1px solid #CBD5E1 !important;
+        background-color: var(--surface) !important;
+        border: 1px solid var(--border) !important;
         border-radius: 12px !important;
-        padding: 8px 14px !important;
+        padding: 10px 18px !important;
         color: #334155 !important;
         font-weight: 600 !important;
-        font-size: 0.85rem !important;
+        font-size: 0.88rem !important;
         white-space: nowrap !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
         cursor: pointer !important;
         transition: all 0.2s ease !important;
     }
 
     div[data-testid="stRadio"] label:hover {
-        background-color: #E2E8F0 !important;
+        border-color: var(--primary-light) !important;
+        transform: translateY(-1px);
     }
 
-    /* Selected Tab Button Style - Orange Gradient */
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {
-        background: linear-gradient(135deg, #F97316 0%, #EA580C 100%) !important;
+        background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%) !important;
         color: #FFFFFF !important;
-        border: 1px solid #EA580C !important;
-        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35) !important;
+        border: 1px solid #4338CA !important;
+        box-shadow: 0 8px 18px -6px rgba(79, 70, 229, 0.55) !important;
     }
 
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p {
         color: #FFFFFF !important;
     }
 
+    /* ---------------- BUTTONS ---------------- */
     .stButton > button, [data-testid="stDownloadButton"] > button {
-        background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+        background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%) !important;
         color: white !important;
         border-radius: 12px !important;
-        padding: 10px 24px !important;
-        font-weight: 600 !important;
+        padding: 12px 24px !important;
+        font-weight: 700 !important;
         border: none !important;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important;
+        box-shadow: 0 8px 18px -6px rgba(79, 70, 229, 0.45) !important;
         width: 100%;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    .stButton > button:hover, [data-testid="stDownloadButton"] > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px -6px rgba(79, 70, 229, 0.6) !important;
+    }
+
+    /* ---------------- SECTION HEADINGS ---------------- */
+    h3 {
+        font-weight: 800 !important;
+        color: var(--text-main) !important;
+        letter-spacing: -0.01em;
+    }
+
+    /* ---------------- CHAT BUBBLES ---------------- */
+    div[data-testid="stChatMessage"] {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-soft);
+        padding: 4px 8px;
+    }
+
+    /* ---------------- DATAFRAME ---------------- */
+    div[data-testid="stDataFrame"] {
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-soft);
+    }
+
+    /* ---------------- ALERTS ---------------- */
+    div[data-testid="stAlert"] {
+        border-radius: var(--radius-sm) !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Top Header UI
+# ==========================================================
+# TOP HEADER UI
+# ==========================================================
 st.markdown("""
     <div class="header-box">
         <h2>🌱 Department of Environmental Science and Engineering</h2>
@@ -188,20 +302,22 @@ course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
     st.markdown("""
-        <div style="display: flex; justify-content: center; margin-bottom: 10px;">
-            <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="80">
+        <div style="display: flex; justify-content: center; margin-bottom: 14px; margin-top: 6px;">
+            <div style="width: 84px; height: 84px; border-radius: 20px; background: linear-gradient(135deg, #4F46E5, #06B6D4); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px -6px rgba(79,70,229,0.5);">
+                <img src="https://cdn-icons-png.flaticon.com/512/3429/3429149.png" width="46" style="filter: brightness(0) invert(1);">
+            </div>
         </div>
     """, unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 20px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
-    
+    st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 22px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
+
     selected_option = st.selectbox("📌 Select Course Material", course_options)
     selected_code = selected_option.split(" - ")[0]
     selected_title = COURSES[selected_code]
-    
+
     st.divider()
     query_params = st.query_params
     admin_pass = st.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
-    st.markdown("<p style='text-align: center; color: #64748B; font-size: 0.8rem; margin-top: 20px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94A3B8; font-size: 0.78rem; margin-top: 26px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
 
 st.markdown(f"""
     <div class="course-card">
@@ -262,6 +378,7 @@ if raw_text.strip():
         """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
+
 def ask_gemini(llm, docs, question):
     context = "\n\n".join([doc.page_content for doc in docs])
     prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
@@ -272,6 +389,7 @@ def ask_gemini(llm, docs, question):
         elif isinstance(response.content, list):
             return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
     return str(response)
+
 
 def display_pdf(file_path):
     doc = fitz.open(file_path)
@@ -284,14 +402,15 @@ def display_pdf(file_path):
         st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- SINGLE LINE HORIZONTAL BUTTON TABS (Flashcards & Formulas Removed) ---
+# --- SINGLE LINE HORIZONTAL BUTTON TABS ---
 tab_selection = st.radio(
     "Navigation Tabs",
     [
-        "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary", 
+        "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary",
         "🎯 Exam Quiz", "📊 Leaderboard"
     ],
     horizontal=True,
@@ -313,7 +432,7 @@ if tab_selection == "📖 View & Download":
         selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
         with open(selected_pdf, "rb") as f:
             st.download_button(
-                label=f"📥 Download File",
+                label="📥 Download File",
                 data=f,
                 file_name=os.path.basename(selected_pdf),
                 mime="application/pdf"
@@ -321,7 +440,7 @@ if tab_selection == "📖 View & Download":
         st.markdown("---")
         display_pdf(selected_pdf)
     else:
-        st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
+        st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
 
 elif tab_selection == "💬 AI Q&A":
     st.markdown("### 💬 Ask Anything About Your Course")
@@ -393,17 +512,17 @@ elif tab_selection == "📊 Leaderboard":
     if selected_course.startswith("ESE 2101"):
         data = {
             "Roll": [
-                "25103402", "25103405", "25103406", "25103409", "25103413", "25103413", 
-                "25103414", "25103415", "25103416", "25103417", "25103420", "25103421", 
-                "25103422", "25103423", "25103427", "25103429", "25103430", "25103431", 
-                "25103433", "25103434", "25103435", "25103436", "25103437", "25103438", 
+                "25103402", "25103405", "25103406", "25103409", "25103413", "25103413",
+                "25103414", "25103415", "25103416", "25103417", "25103420", "25103421",
+                "25103422", "25103423", "25103427", "25103429", "25103430", "25103431",
+                "25103433", "25103434", "25103435", "25103436", "25103437", "25103438",
                 "25103440", "24103403", "24103423"
             ],
             "Name of Students": [
-                "FARJANA AKTER MITU", "MOHSINA KHAN", "NOSHIN", "AMIR HAMZA RATUL", "NAZIFA SULTANA", "ELMA", 
-                "MD. SAIDUR RAHMAN SAID", "MST. FARHANA ISLAM BORSHA", "MD. KAWSER MAHMUD", "SADIA AFRIN PROMI", "JUNAID HASSAN PROVAT", "SIRAZUM MONIRA", 
-                "SHAD EVENY AHMED SHOWRAV", "MD. MAHADI HASAN", "MURSALIN AL IFTI", "RADUYAN HOSEN", "SANIA AKTER", "HRIDOY MIA", 
-                "MD. ABU SAIM", "MD. YOUSUF ALI", "MUTAHARA SALSABIL LABIBA", "MAHDI HASAN MARUF", "MST. RATNA AKTER", "MST. KHADILA AKTER", 
+                "FARJANA AKTER MITU", "MOHSINA KHAN", "NOSHIN", "AMIR HAMZA RATUL", "NAZIFA SULTANA", "ELMA",
+                "MD. SAIDUR RAHMAN SAID", "MST. FARHANA ISLAM BORSHA", "MD. KAWSER MAHMUD", "SADIA AFRIN PROMI", "JUNAID HASSAN PROVAT", "SIRAZUM MONIRA",
+                "SHAD EVENY AHMED SHOWRAV", "MD. MAHADI HASAN", "MURSALIN AL IFTI", "RADUYAN HOSEN", "SANIA AKTER", "HRIDOY MIA",
+                "MD. ABU SAIM", "MD. YOUSUF ALI", "MUTAHARA SALSABIL LABIBA", "MAHDI HASAN MARUF", "MST. RATNA AKTER", "MST. KHADILA AKTER",
                 "BORSHA AKTER", "UMME SALMA SADIA", "FARIHA TASNUBA"
             ],
             "Attendance (10)": [10, 7, 9, 9, 10, 9, 10, 10, 10, 10, 9, 9, 9, 9, 8, 10, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10],
