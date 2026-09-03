@@ -137,19 +137,20 @@ st.markdown("""
         position: relative;
         display: block;
         margin: 0 auto 16px auto;
-        width: 74px;
-        height: 74px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.95);
-        padding: 6px;
+        width: 92px;
+        height: 92px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.96);
+        padding: 10px;
         box-shadow: 0 8px 20px -4px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15);
         z-index: 2;
         object-fit: contain;
     }
     @media (max-width: 768px) {
         .uni-logo-corner {
-            width: 56px;
-            height: 56px;
+            width: 72px;
+            height: 72px;
+            padding: 8px;
         }
     }
 
