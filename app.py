@@ -242,13 +242,33 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
     section[data-testid="stSidebar"] input {
-        background-color: rgba(255,255,255,0.05) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
+        background-color: #161C33 !important;
+        border: 1px solid rgba(255,255,255,0.14) !important;
         border-radius: 12px !important;
         color: #FFFFFF !important;
     }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] div {
+        background-color: transparent !important;
+        color: #FFFFFF !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] span {
+        color: #FFFFFF !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
+        fill: #FFFFFF !important;
+    }
     section[data-testid="stSidebar"] div[data-baseweb="select"]:hover > div {
         border-color: rgba(109, 93, 252, 0.5) !important;
+    }
+    /* Dropdown popover list (renders in a portal, outside the sidebar DOM) */
+    div[data-baseweb="popover"] li,
+    div[data-baseweb="menu"] li {
+        background-color: #161C33 !important;
+        color: #FFFFFF !important;
+    }
+    div[data-baseweb="popover"] li:hover,
+    div[data-baseweb="menu"] li:hover {
+        background-color: #2A2F55 !important;
     }
     section[data-testid="stSidebar"] hr {
         border-color: rgba(255,255,255,0.08) !important;
