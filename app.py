@@ -132,15 +132,15 @@ st.markdown("""
         font-size: 0.6rem;
     }
 
-    /* ---------------- UNIVERSITY LOGO (top-right corner of header) ---------------- */
+    /* ---------------- UNIVERSITY LOGO (top-center of header) ---------------- */
     .uni-logo-corner {
-        position: absolute;
-        top: 18px;
-        right: 22px;
-        width: 64px;
-        height: 64px;
+        position: relative;
+        display: block;
+        margin: 0 auto 16px auto;
+        width: 74px;
+        height: 74px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.92);
+        background: rgba(255,255,255,0.95);
         padding: 6px;
         box-shadow: 0 8px 20px -4px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15);
         z-index: 2;
@@ -148,10 +148,8 @@ st.markdown("""
     }
     @media (max-width: 768px) {
         .uni-logo-corner {
-            width: 46px;
-            height: 46px;
-            top: 12px;
-            right: 12px;
+            width: 56px;
+            height: 56px;
         }
     }
 
