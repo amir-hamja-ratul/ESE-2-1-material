@@ -401,6 +401,18 @@ st.markdown("""
     hr {
         border-color: var(--border) !important;
     }
+
+    /* ---------------- FILE PICKER CARD (tinted, not white) ---------------- */
+    .st-key-file_picker_card {
+        background: linear-gradient(135deg, rgba(109, 93, 252, 0.08), rgba(34, 211, 238, 0.06));
+        border: 1px solid rgba(109, 93, 252, 0.18);
+        border-radius: var(--radius-md);
+        padding: 22px 24px 8px 24px;
+        box-shadow: var(--shadow-soft);
+    }
+    .st-key-file_picker_card div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -578,14 +590,15 @@ if raw_text.strip():
 if tab_selection == "📖 View & Download":
     st.markdown("### 📄 Course Documents Viewer")
     if local_pdfs:
-        selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
-        with open(selected_pdf, "rb") as f:
-            st.download_button(
-                label="📥 Download File",
-                data=f,
-                file_name=os.path.basename(selected_pdf),
-                mime="application/pdf"
-            )
+        with st.container(key="file_picker_card"):
+            selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
+            with open(selected_pdf, "rb") as f:
+                st.download_button(
+                    label="📥 Download File",
+                    data=f,
+                    file_name=os.path.basename(selected_pdf),
+                    mime="application/pdf"
+                )
         st.markdown("---")
         display_pdf(selected_pdf)
     else:
