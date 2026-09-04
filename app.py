@@ -639,6 +639,8 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 COURSES = {
+     "Syllabus",
+     "Routine",
     "ESE 2101": "Hydrology and Hydrogeology",
     "ESE 2103": "Oceanography and Limnology",
     "ESE 2105": "Ecology",
