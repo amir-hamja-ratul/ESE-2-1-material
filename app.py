@@ -620,6 +620,29 @@ st.markdown("""
         background-color: #FFFFFF !important;
     }
 
+    /* ---------------- SIDEBAR SEARCH RESULT BUTTONS ---------------- */
+    section[data-testid="stSidebar"] .stButton > button {
+        background: rgba(109, 93, 252, 0.12) !important;
+        color: #E4E7FF !important;
+        border: 1px solid rgba(109, 93, 252, 0.3) !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+        box-shadow: none !important;
+        font-weight: 500 !important;
+        font-size: 0.82rem !important;
+        padding: 9px 14px !important;
+        margin-bottom: 6px !important;
+    }
+    section[data-testid="stSidebar"] .stButton > button:hover {
+        background: rgba(109, 93, 252, 0.28) !important;
+        border-color: rgba(109, 93, 252, 0.6) !important;
+        transform: translateX(2px);
+    }
+    section[data-testid="stSidebar"] .stButton > button p {
+        color: #E4E7FF !important;
+        text-align: left !important;
+    }
+
     /* ---------------- TAB CONTENT FADE-IN ---------------- */
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateY(10px); }
@@ -724,9 +747,50 @@ with st.sidebar:
             </div>
         </div>
     """, unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 22px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 18px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
 
-    selected_option = st.selectbox("📌 Select Course Material", course_options)
+    # ---------------- GLOBAL SEARCH (courses + PDF filenames) ----------------
+    search_query = st.text_input(
+        "🔍 Search Courses & Files",
+        placeholder="e.g. hydrology, syllabus, quiz.pdf",
+        key="global_search_input"
+    )
+
+    if search_query.strip():
+        q = search_query.strip().lower()
+
+        matched_courses = [
+            (code, title) for code, title in COURSES.items()
+            if q in code.lower() or q in title.lower()
+        ]
+
+        matched_files = []
+        for code in COURSES:
+            folder = os.path.join("data", code.replace(" ", "_"))
+            for pdf_path in glob.glob(f"{folder}/*.pdf"):
+                fname = os.path.basename(pdf_path)
+                if q in fname.lower():
+                    matched_files.append((code, fname))
+
+        if matched_courses or matched_files:
+            st.markdown("<p style='font-size:0.78rem; font-weight:700; color:#8B90A8; text-transform:uppercase; letter-spacing:0.8px; margin:14px 0 8px 0;'>🔎 Results</p>", unsafe_allow_html=True)
+
+            for code, title in matched_courses[:6]:
+                if st.button(f"📘 {code} — {title}", key=f"search_course_{code}", use_container_width=True):
+                    st.session_state["course_selectbox"] = f"{code} - {title}"
+                    st.rerun()
+
+            for code, fname in matched_files[:6]:
+                title = COURSES[code]
+                if st.button(f"📄 {fname}", key=f"search_file_{code}_{fname}", use_container_width=True):
+                    st.session_state["course_selectbox"] = f"{code} - {title}"
+                    st.rerun()
+        else:
+            st.caption("😕 কোনো ফলাফল পাওয়া যায়নি।")
+
+        st.divider()
+
+    selected_option = st.selectbox("📌 Select Course Material", course_options, key="course_selectbox")
     selected_code = selected_option.split(" - ")[0]
     selected_title = COURSES[selected_code]
 
