@@ -76,8 +76,27 @@ st.markdown("""
         max-width: 1180px;
     }
 
-    /* Hide Streamlit chrome */
-    #MainMenu, footer, header[data-testid="stHeader"] { visibility: hidden; height: 0; }
+    /* Hide Streamlit chrome, but KEEP the mobile sidebar toggle button working */
+    #MainMenu, footer { visibility: hidden; height: 0; }
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    header[data-testid="stHeader"] [data-testid="stToolbar"] {
+        visibility: hidden;
+    }
+    /* Make sure the sidebar open/close arrow stays visible on mobile */
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stSidebarCollapsedControl"] button,
+    header[data-testid="stHeader"] [data-testid="baseButton-headerNoPadding"] {
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: flex !important;
+        z-index: 999999 !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] svg {
+        fill: var(--ink-950) !important;
+    }
 
     /* ---------------- HERO HEADER (glass + noise) ---------------- */
     .header-box {
