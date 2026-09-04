@@ -76,23 +76,25 @@ st.markdown("""
         max-width: 1180px;
     }
 
-    /* Hide Streamlit chrome, but KEEP the mobile sidebar toggle button working */
-    #MainMenu, footer { visibility: hidden; height: 0; }
+    /* Hide Streamlit chrome, but KEEP the sidebar toggle button fully working */
+    #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
     header[data-testid="stHeader"] {
         background: transparent !important;
         box-shadow: none !important;
     }
-    header[data-testid="stHeader"] [data-testid="stToolbar"] {
-        visibility: hidden;
-    }
-    /* Make sure the sidebar open/close arrow stays visible on mobile */
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="stSidebarCollapsedControl"] button,
-    header[data-testid="stHeader"] [data-testid="baseButton-headerNoPadding"] {
+    /* Force the sidebar open/close arrow to always be visible and on top */
+    [data-testid="stSidebarCollapsedControl"] {
         visibility: visible !important;
-        opacity: 1 !important;
         display: flex !important;
+        opacity: 1 !important;
         z-index: 999999 !important;
+        position: fixed !important;
+        top: 12px !important;
+        left: 12px !important;
+        background: #FFFFFF !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18) !important;
+        padding: 4px !important;
     }
     [data-testid="stSidebarCollapsedControl"] svg {
         fill: var(--ink-950) !important;
