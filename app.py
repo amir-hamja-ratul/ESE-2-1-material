@@ -10,6 +10,9 @@ import fitz   # PyMuPDF
 from PIL import Image
 import io
 import pandas as pd
+import sqlite3
+import hashlib
+from datetime import date, datetime
 
 # ==========================================================
 # PAGE CONFIG
@@ -25,6 +28,157 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+# ==========================================================
+# PROGRESS TRACKING (lightweight, no-password student profile)
+# ==========================================================
+DB_PATH = os.path.join(os.path.dirname(__file__), "eduhub_progress.db")
+
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS activity_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT NOT NULL,
+            student_name TEXT,
+            course_code TEXT NOT NULL,
+            action TEXT NOT NULL,
+            activity_date TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    return conn
+
+
+def log_activity(student_id, student_name, course_code, action):
+    """Record one study action (view/ask/summary/quiz) for a student."""
+    if not student_id:
+        return
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT INTO activity_log (student_id, student_name, course_code, action, activity_date, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (student_id, student_name, course_code, action, date.today().isoformat(), datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_study_streak(student_id):
+    """Consecutive days (ending today) the student had at least one activity."""
+    if not student_id:
+        return 0
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT DISTINCT activity_date FROM activity_log WHERE student_id = ?",
+        (student_id,)
+    ).fetchall()
+    conn.close()
+    if not rows:
+        return 0
+    activity_dates = {date.fromisoformat(r[0]) for r in rows}
+    streak = 0
+    cursor_date = date.today()
+    while cursor_date in activity_dates:
+        streak += 1
+        cursor_date = date.fromordinal(cursor_date.toordinal() - 1)
+    return streak
+
+
+def get_total_activities(student_id):
+    if not student_id:
+        return 0
+    conn = get_db_connection()
+    row = conn.execute("SELECT COUNT(*) FROM activity_log WHERE student_id = ?", (student_id,)).fetchone()
+    conn.close()
+    return row[0] if row else 0
+
+
+def get_course_progress(student_id):
+    """Returns {course_code: activity_count} for this student."""
+    if not student_id:
+        return {}
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT course_code, COUNT(*) FROM activity_log WHERE student_id = ? GROUP BY course_code",
+        (student_id,)
+    ).fetchall()
+    conn.close()
+    return {r[0]: r[1] for r in rows}
+
+
+def track(action, course_code):
+    """Convenience wrapper: logs activity only if the student has entered their ID."""
+    sid = st.session_state.get("student_id")
+    sname = st.session_state.get("student_name", "")
+    if sid:
+        log_activity(sid, sname, course_code, action)
+
+
+# ==========================================================
+# AI + PDF HELPER FUNCTIONS
+# ==========================================================
+def ask_gemini(llm, docs, question):
+    context = "\n\n".join([doc.page_content for doc in docs])
+    prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
+    response = llm.invoke(prompt)
+    if hasattr(response, 'content'):
+        if isinstance(response.content, str):
+            return response.content
+        elif isinstance(response.content, list):
+            return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
+    return str(response)
+
+
+def display_pdf(file_path):
+    doc = fitz.open(file_path)
+    st.info(f"📖 **Displaying Total Pages:** {len(doc)}")
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        pix = page.get_pixmap(dpi=150)
+        img_bytes = pix.tobytes("png")
+        image = Image.open(io.BytesIO(img_bytes))
+        st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+
+# ==========================================================
+# CACHING — heavy operations run once and are reused
+# (course switches / reruns become instant instead of re-reading
+#  PDFs or rebuilding the AI search index every time)
+# ==========================================================
+@st.cache_resource(show_spinner="🧠 Loading AI embedding model...")
+def get_embeddings_model():
+    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+
+
+@st.cache_resource(show_spinner=False)
+def get_llm(_api_key):
+    return ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=_api_key, temperature=0.3)
+
+
+@st.cache_data(show_spinner="📚 Reading course PDFs...")
+def extract_text_from_local_pdfs(pdf_paths, cache_key):
+    """cache_key includes file mtimes so the cache auto-invalidates if files change."""
+    raw = ""
+    pages = 0
+    for pdf_path in pdf_paths:
+        reader = PdfReader(pdf_path)
+        pages += len(reader.pages)
+        for page in reader.pages:
+            raw += page.extract_text() or ""
+    return raw, pages
+
+
+@st.cache_resource(show_spinner="⚙️ Indexing documents for AI search...")
+def build_vector_store(course_code, text_hash, raw_text):
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    chunks = text_splitter.split_text(raw_text)
+    embeddings = get_embeddings_model()
+    return FAISS.from_texts(chunks, embedding=embeddings)
+
 
 # ==========================================================
 # MODERN PROFESSIONAL UI/UX CSS (Glassmorphism + Refined System)
@@ -517,6 +671,19 @@ with st.sidebar:
     selected_title = COURSES[selected_code]
 
     st.divider()
+
+    st.markdown("👤 **YOUR PROFILE** <span style='color:#8B90A8; font-weight:500; font-size:0.72rem;'>(for progress tracking)</span>", unsafe_allow_html=True)
+    student_name_input = st.text_input("Your Name", placeholder="e.g. Mursalin Al Ifti", key="student_name_field")
+    student_roll_input = st.text_input("Roll Number", placeholder="e.g. 25103402", key="student_roll_field")
+    if student_roll_input.strip():
+        st.session_state["student_id"] = student_roll_input.strip()
+        st.session_state["student_name"] = student_name_input.strip() or student_roll_input.strip()
+        st.caption(f"✅ Tracking progress for **{st.session_state['student_name']}**")
+    else:
+        st.session_state["student_id"] = None
+        st.caption("↳ রোল নম্বর দিলে তোমার পড়াশোনার streak ও progress সেভ হবে।")
+
+    st.divider()
     query_params = st.query_params
     admin_pass = st.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
     st.markdown("<p style='text-align: center; color: #94A3B8; font-size: 0.78rem; margin-top: 26px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
@@ -548,6 +715,7 @@ total_pages = 0
 files_count = 0
 
 if uploaded_files:
+    # Uploaded files aren't cached (fresh each session), but this path is admin-only and rare.
     files_count = len(uploaded_files)
     for pdf in uploaded_files:
         pdf_reader = PdfReader(pdf)
@@ -556,11 +724,9 @@ if uploaded_files:
             raw_text += page.extract_text() or ""
 elif local_pdfs:
     files_count = len(local_pdfs)
-    for pdf_path in local_pdfs:
-        pdf_reader = PdfReader(pdf_path)
-        total_pages += len(pdf_reader.pages)
-        for page in pdf_reader.pages:
-            raw_text += page.extract_text() or ""
+    # mtimes force the cache to refresh automatically if a PDF is added/changed
+    mtimes = tuple(os.path.getmtime(p) for p in local_pdfs)
+    raw_text, total_pages = extract_text_from_local_pdfs(tuple(local_pdfs), mtimes)
 
 if raw_text.strip():
     col1, col2 = st.columns(2)
@@ -581,30 +747,6 @@ if raw_text.strip():
     st.markdown("<br>", unsafe_allow_html=True)
 
 
-def ask_gemini(llm, docs, question):
-    context = "\n\n".join([doc.page_content for doc in docs])
-    prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
-    response = llm.invoke(prompt)
-    if hasattr(response, 'content'):
-        if isinstance(response.content, str):
-            return response.content
-        elif isinstance(response.content, list):
-            return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
-    return str(response)
-
-
-def display_pdf(file_path):
-    doc = fitz.open(file_path)
-    st.info(f"📖 **Displaying Total Pages:** {len(doc)}")
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        pix = page.get_pixmap(dpi=150)
-        img_bytes = pix.tobytes("png")
-        image = Image.open(io.BytesIO(img_bytes))
-        st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-
-
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -613,20 +755,19 @@ tab_selection = st.radio(
     "Navigation Tabs",
     [
         "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary",
-        "🎯 Exam Quiz", "📊 Leaderboard"
+        "🎯 Exam Quiz", "📈 My Progress", "📊 Leaderboard"
     ],
     horizontal=True,
     label_visibility="collapsed"
 )
 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key, temperature=0.3)
+llm = get_llm(api_key)
 vector_store = None
 
 if raw_text.strip():
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = text_splitter.split_text(raw_text)
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+    text_hash = hashlib.md5(raw_text.encode("utf-8")).hexdigest()
+    vector_store = build_vector_store(selected_code, text_hash, raw_text)
+
 
 if tab_selection == "📖 View & Download":
     st.markdown("### 📄 Course Documents Viewer")
@@ -640,6 +781,7 @@ if tab_selection == "📖 View & Download":
                     file_name=os.path.basename(selected_pdf),
                     mime="application/pdf"
                 )
+        track("viewed_pdf", selected_code)
         st.markdown("---")
         display_pdf(selected_pdf)
     else:
@@ -664,6 +806,7 @@ elif tab_selection == "💬 AI Q&A":
                     res = ask_gemini(llm, docs, prompt_with_bilingual)
                     st.markdown(res)
                     st.session_state.messages.append({"role": "assistant", "content": res})
+                    track("asked_question", selected_code)
         else:
             st.error("⚠️ আগে ডকুমেন্ট আপলোড করুন বা ফোল্ডারে ফাইল রাখুন যাতে AI সার্চ করতে পারে।")
 
@@ -675,6 +818,7 @@ elif tab_selection == "📝 Smart Summary":
                 docs = vector_store.similarity_search("Summary overview main points")
                 summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
                 st.markdown(summary_res)
+                track("generated_summary", selected_code)
         else:
             st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
@@ -686,10 +830,58 @@ elif tab_selection == "🎯 Exam Quiz":
                 docs = vector_store.similarity_search("Important concepts exam questions")
                 quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং বাংলা অনুবাদ যুক্ত করো।")
                 st.markdown(quiz_res)
+                track("generated_quiz", selected_code)
         else:
             st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-elif tab_selection == "📊 Leaderboard":
+elif tab_selection == "📈 My Progress":
+    st.markdown("### 📈 Your Study Progress")
+    sid = st.session_state.get("student_id")
+
+    if not sid:
+        st.info("👤 বাম পাশের সাইডবারে তোমার **নাম ও রোল নম্বর** দাও — তাহলেই তোমার পড়াশোনার progress ট্র্যাক হওয়া শুরু হবে।")
+    else:
+        streak = get_study_streak(sid)
+        total_activities = get_total_activities(sid)
+        course_progress = get_course_progress(sid)
+        courses_touched = len(course_progress)
+
+        pcol1, pcol2, pcol3 = st.columns(3)
+        with pcol1:
+            st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-card-val">🔥 {streak}</div>
+                    <div class="metric-card-lbl">Day Study Streak</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with pcol2:
+            st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-card-val">{total_activities}</div>
+                    <div class="metric-card-lbl">Total Activities</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with pcol3:
+            st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-card-val">{courses_touched}</div>
+                    <div class="metric-card-lbl">Courses Explored</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("#### 📚 Course-wise Engagement")
+
+        if course_progress:
+            for code, count in sorted(course_progress.items(), key=lambda x: -x[1]):
+                title = COURSES.get(code, code)
+                pct = min(count / 12, 1.0)
+                st.markdown(f"**{code} — {title}**")
+                st.progress(pct, text=f"{count} activities logged")
+        else:
+            st.info("এখনো কোনো activity রেকর্ড হয়নি। কোনো course-এর PDF দেখো, প্রশ্ন করো, বা quiz/summary বানাও — progress এখানে দেখা যাবে!")
+
+
     st.markdown("### 📊 Department of Environmental Science and Engineering")
     st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
     st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
