@@ -144,6 +144,17 @@ def display_pdf(file_path):
         st.markdown("<br>", unsafe_allow_html=True)
 
 
+def skeleton_html(label="Generating response", lines=(95, 88, 92, 60, 80)):
+    """Returns shimmer-style skeleton placeholder HTML shown while the AI is thinking."""
+    bars = "".join(f'<div class="skeleton-line" style="width:{w}%"></div>' for w in lines)
+    return f"""
+        <div class="skeleton-wrap">
+            <div class="skeleton-badge"><span class="dot"></span>{label}...</div>
+            {bars}
+        </div>
+    """
+
+
 # ==========================================================
 # CACHING — heavy operations run once and are reused
 # (course switches / reruns become instant instead of re-reading
@@ -608,6 +619,53 @@ st.markdown("""
     .st-key-file_picker_card div[data-baseweb="select"] > div {
         background-color: #FFFFFF !important;
     }
+
+    /* ---------------- TAB CONTENT FADE-IN ---------------- */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .st-key-tab_content_area {
+        animation: fadeInUp 0.45s cubic-bezier(0.22, 0.8, 0.32, 1);
+    }
+
+    /* ---------------- SKELETON SHIMMER LOADING ---------------- */
+    @keyframes shimmerMove {
+        0%   { background-position: -420px 0; }
+        100% { background-position: 420px 0; }
+    }
+    .skeleton-wrap {
+        padding: 4px 2px 8px 2px;
+    }
+    .skeleton-line {
+        height: 14px;
+        border-radius: 7px;
+        margin-bottom: 13px;
+        background: linear-gradient(90deg, #EBEDF7 0px, #DCE0F5 60px, #EBEDF7 120px);
+        background-size: 840px 100%;
+        animation: shimmerMove 1.3s infinite linear;
+    }
+    .skeleton-line:last-child { margin-bottom: 0; }
+    .skeleton-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--violet);
+        margin-bottom: 14px;
+    }
+    .skeleton-badge .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--violet), var(--cyan));
+        animation: pulseDot 1s infinite ease-in-out;
+    }
+    @keyframes pulseDot {
+        0%, 100% { opacity: 0.3; transform: scale(0.85); }
+        50% { opacity: 1; transform: scale(1.15); }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -639,7 +697,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 COURSES = {
-        "SYL": "Syllabus",
+    "SYL": "Syllabus",
     "ROU": "Routine",
     "ESE 2101": "Hydrology and Hydrogeology",
     "ESE 2103": "Oceanography and Limnology",
@@ -771,166 +829,170 @@ if raw_text.strip():
     vector_store = build_vector_store(selected_code, text_hash, raw_text)
 
 
-if tab_selection == "📖 View & Download":
-    st.markdown("### 📄 Course Documents Viewer")
-    if local_pdfs:
-        with st.container(key="file_picker_card"):
-            selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
-            with open(selected_pdf, "rb") as f:
-                st.download_button(
-                    label="📥 Download File",
-                    data=f,
-                    file_name=os.path.basename(selected_pdf),
-                    mime="application/pdf"
-                )
-        track("viewed_pdf", selected_code)
-        st.markdown("---")
-        display_pdf(selected_pdf)
-    else:
-        st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
+with st.container(key="tab_content_area"):
+    if tab_selection == "📖 View & Download":
+        st.markdown("### 📄 Course Documents Viewer")
+        if local_pdfs:
+            with st.container(key="file_picker_card"):
+                selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
+                with open(selected_pdf, "rb") as f:
+                    st.download_button(
+                        label="📥 Download File",
+                        data=f,
+                        file_name=os.path.basename(selected_pdf),
+                        mime="application/pdf"
+                    )
+            track("viewed_pdf", selected_code)
+            st.markdown("---")
+            display_pdf(selected_pdf)
+        else:
+            st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
 
-elif tab_selection == "💬 AI Q&A":
-    st.markdown("### 💬 Ask Anything About Your Course")
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    elif tab_selection == "💬 AI Q&A":
+        st.markdown("### 💬 Ask Anything About Your Course")
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-    if user_query := st.chat_input("Type your question here..."):
-        if vector_store:
-            prompt_with_bilingual = f"{user_query}\n\n[অর্ডার: উত্তরটি প্রথমে সহজ ইংরেজিতে (Easy English) দেবে এবং সাথে সাথেই তার বাংলা অনুবাদ (Bangla Translation) নিচে যুক্ত করবে।]"
-            st.session_state.messages.append({"role": "user", "content": user_query})
-            with st.chat_message("user"):
-                st.markdown(user_query)
+        if user_query := st.chat_input("Type your question here..."):
+            if vector_store:
+                prompt_with_bilingual = f"{user_query}\n\n[অর্ডার: উত্তরটি প্রথমে সহজ ইংরেজিতে (Easy English) দেবে এবং সাথে সাথেই তার বাংলা অনুবাদ (Bangla Translation) নিচে যুক্ত করবে।]"
+                st.session_state.messages.append({"role": "user", "content": user_query})
+                with st.chat_message("user"):
+                    st.markdown(user_query)
 
-            with st.chat_message("assistant"):
-                with st.spinner("Generating smart response..."):
+                with st.chat_message("assistant"):
+                    placeholder = st.empty()
+                    placeholder.markdown(skeleton_html("Generating smart response"), unsafe_allow_html=True)
                     docs = vector_store.similarity_search(user_query)
                     res = ask_gemini(llm, docs, prompt_with_bilingual)
-                    st.markdown(res)
+                    placeholder.markdown(res)
                     st.session_state.messages.append({"role": "assistant", "content": res})
                     track("asked_question", selected_code)
-        else:
-            st.error("⚠️ আগে ডকুমেন্ট আপলোড করুন বা ফোল্ডারে ফাইল রাখুন যাতে AI সার্চ করতে পারে।")
+            else:
+                st.error("⚠️ আগে ডকুমেন্ট আপলোড করুন বা ফোল্ডারে ফাইল রাখুন যাতে AI সার্চ করতে পারে।")
 
-elif tab_selection == "📝 Smart Summary":
-    st.markdown("### 📝 Auto-Generated Course Summary")
-    if st.button("✨ Generate Smart Summary", key="sum_btn"):
-        if vector_store:
-            with st.spinner("Analyzing and summarizing..."):
+    elif tab_selection == "📝 Smart Summary":
+        st.markdown("### 📝 Auto-Generated Course Summary")
+        if st.button("✨ Generate Smart Summary", key="sum_btn"):
+            if vector_store:
+                placeholder = st.empty()
+                placeholder.markdown(skeleton_html("Analyzing and summarizing"), unsafe_allow_html=True)
                 docs = vector_store.similarity_search("Summary overview main points")
                 summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
-                st.markdown(summary_res)
+                placeholder.markdown(summary_res)
                 track("generated_summary", selected_code)
-        else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
+            else:
+                st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
 
-elif tab_selection == "🎯 Exam Quiz":
-    st.markdown("### 🎯 Exam Preparation Quiz")
-    if st.button("📝 Generate Practice Questions", key="quiz_btn"):
-        if vector_store:
-            with st.spinner("Creating exam questions..."):
+    elif tab_selection == "🎯 Exam Quiz":
+        st.markdown("### 🎯 Exam Preparation Quiz")
+        if st.button("📝 Generate Practice Questions", key="quiz_btn"):
+            if vector_store:
+                placeholder = st.empty()
+                placeholder.markdown(skeleton_html("Creating exam questions"), unsafe_allow_html=True)
                 docs = vector_store.similarity_search("Important concepts exam questions")
                 quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং বাংলা অনুবাদ যুক্ত করো।")
-                st.markdown(quiz_res)
+                placeholder.markdown(quiz_res)
                 track("generated_quiz", selected_code)
+            else:
+                st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
+
+    elif tab_selection == "📈 My Progress":
+        st.markdown("### 📈 Your Study Progress")
+        sid = st.session_state.get("student_id")
+
+        if not sid:
+            st.info("👤 বাম পাশের সাইডবারে তোমার **নাম ও রোল নম্বর** দাও — তাহলেই তোমার পড়াশোনার progress ট্র্যাক হওয়া শুরু হবে।")
         else:
-            st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
+            streak = get_study_streak(sid)
+            total_activities = get_total_activities(sid)
+            course_progress = get_course_progress(sid)
+            courses_touched = len(course_progress)
 
-elif tab_selection == "📈 My Progress":
-    st.markdown("### 📈 Your Study Progress")
-    sid = st.session_state.get("student_id")
+            pcol1, pcol2, pcol3 = st.columns(3)
+            with pcol1:
+                st.markdown(f"""
+                    <div class="metric-card">
+                        <div class="metric-card-val">🔥 {streak}</div>
+                        <div class="metric-card-lbl">Day Study Streak</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            with pcol2:
+                st.markdown(f"""
+                    <div class="metric-card">
+                        <div class="metric-card-val">{total_activities}</div>
+                        <div class="metric-card-lbl">Total Activities</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            with pcol3:
+                st.markdown(f"""
+                    <div class="metric-card">
+                        <div class="metric-card-val">{courses_touched}</div>
+                        <div class="metric-card-lbl">Courses Explored</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    if not sid:
-        st.info("👤 বাম পাশের সাইডবারে তোমার **নাম ও রোল নম্বর** দাও — তাহলেই তোমার পড়াশোনার progress ট্র্যাক হওয়া শুরু হবে।")
-    else:
-        streak = get_study_streak(sid)
-        total_activities = get_total_activities(sid)
-        course_progress = get_course_progress(sid)
-        courses_touched = len(course_progress)
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("#### 📚 Course-wise Engagement")
 
-        pcol1, pcol2, pcol3 = st.columns(3)
-        with pcol1:
-            st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-card-val">🔥 {streak}</div>
-                    <div class="metric-card-lbl">Day Study Streak</div>
-                </div>
-            """, unsafe_allow_html=True)
-        with pcol2:
-            st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-card-val">{total_activities}</div>
-                    <div class="metric-card-lbl">Total Activities</div>
-                </div>
-            """, unsafe_allow_html=True)
-        with pcol3:
-            st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-card-val">{courses_touched}</div>
-                    <div class="metric-card-lbl">Courses Explored</div>
-                </div>
-            """, unsafe_allow_html=True)
+            if course_progress:
+                for code, count in sorted(course_progress.items(), key=lambda x: -x[1]):
+                    title = COURSES.get(code, code)
+                    pct = min(count / 12, 1.0)
+                    st.markdown(f"**{code} — {title}**")
+                    st.progress(pct, text=f"{count} activities logged")
+            else:
+                st.info("এখনো কোনো activity রেকর্ড হয়নি। কোনো course-এর PDF দেখো, প্রশ্ন করো, বা quiz/summary বানাও — progress এখানে দেখা যাবে!")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### 📚 Course-wise Engagement")
 
-        if course_progress:
-            for code, count in sorted(course_progress.items(), key=lambda x: -x[1]):
-                title = COURSES.get(code, code)
-                pct = min(count / 12, 1.0)
-                st.markdown(f"**{code} — {title}**")
-                st.progress(pct, text=f"{count} activities logged")
+        st.markdown("### 📊 Department of Environmental Science and Engineering")
+        st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
+        st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
+
+        courses = [
+            "ESE 2101: Hydrology and Hydrogeology",
+            "ESE 2103: Oceanography and Limnology",
+            "ESE 2105: Ecology",
+            "ESE 2102: Ecology - Lab",
+            "ESE 2107: Environmental Microbiology",
+            "ESE 2104: Environmental Microbiology - Lab",
+            "ESE 2109: Survey and Settlement",
+            "ESE 2106: Survey and Settlement - Lab",
+            "ESE 2111: Soil Mechanics",
+            "ESE 2108: Engineering Drawing Lab",
+            "ESE 2113: Statistics for Environment",
+            "PYQ: Previous Year Questions",
+            "MEQ: Mid Exam Questions"
+        ]
+
+        selected_course = st.selectbox("📚 কোর্স সিলেক্ট করুন:", courses, key="internal_course_select")
+
+        if selected_course.startswith("ESE 2101"):
+            data = {
+                "Roll": [
+                    "25103402", "25103405", "25103406", "25103409", "25103413", "25103413",
+                    "25103414", "25103415", "25103416", "25103417", "25103420", "25103421",
+                    "25103422", "25103423", "25103427", "25103429", "25103430", "25103431",
+                    "25103433", "25103434", "25103435", "25103436", "25103437", "25103438",
+                    "25103440", "24103403", "24103423"
+                ],
+                "Name of Students": [
+                    "FARJANA AKTER MITU", "MOHSINA KHAN", "NOSHIN", "AMIR HAMZA RATUL", "NAZIFA SULTANA", "ELMA",
+                    "MD. SAIDUR RAHMAN SAID", "MST. FARHANA ISLAM BORSHA", "MD. KAWSER MAHMUD", "SADIA AFRIN PROMI", "JUNAID HASSAN PROVAT", "SIRAZUM MONIRA",
+                    "SHAD EVENY AHMED SHOWRAV", "MD. MAHADI HASAN", "MURSALIN AL IFTI", "RADUYAN HOSEN", "SANIA AKTER", "HRIDOY MIA",
+                    "MD. ABU SAIM", "MD. YOUSUF ALI", "MUTAHARA SALSABIL LABIBA", "MAHDI HASAN MARUF", "MST. RATNA AKTER", "MST. KHADILA AKTER",
+                    "BORSHA AKTER", "UMME SALMA SADIA", "FARIHA TASNUBA"
+                ],
+                "Attendance (10)": [10, 7, 9, 9, 10, 9, 10, 10, 10, 10, 9, 9, 9, 9, 8, 10, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+                "Mid-1 (10)": [10, 8, 10, 10, 10, 9, 9, 10, 8, 8, 10, 10, 9, 10, 10, 10, 10, 8, 10, 10, 10, 9, 9, 10, 10, 10, 10],
+                "Mid-2 (10)": [8, 8, 9, 9, 9, 9, 10, 10, 9, 9, 9, 10, 10, 9, 7, 9, 7, 10, 10, 10, 10, 8, 10, 9, 9, 7, 10],
+                "Mid-3 (10)": [9, 9, 6, 6, 7, 6, 8, 6, 6, 7, 6, 7, 7, 8, 5, 9, 10, 8, 6, 8, 10, 6, 8, 9, 10, 10, 7],
+                "Total Marks (40)": [37, 32, 34, 34, 36, 33, 37, 36, 33, 34, 34, 36, 35, 36, 30, 38, 36, 35, 36, 38, 40, 33, 37, 38, 39, 37, 37]
+            }
+            df_internal = pd.DataFrame(data)
+            df_internal = df_internal.sort_values(by="Total Marks (40)", ascending=False).reset_index(drop=True)
+            df_internal.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_internal) + 1)])
+            st.dataframe(df_internal, use_container_width=True, hide_index=True)
         else:
-            st.info("এখনো কোনো activity রেকর্ড হয়নি। কোনো course-এর PDF দেখো, প্রশ্ন করো, বা quiz/summary বানাও — progress এখানে দেখা যাবে!")
-
-
-    st.markdown("### 📊 Department of Environmental Science and Engineering")
-    st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
-    st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
-
-    courses = [
-        "ESE 2101: Hydrology and Hydrogeology",
-        "ESE 2103: Oceanography and Limnology",
-        "ESE 2105: Ecology",
-        "ESE 2102: Ecology - Lab",
-        "ESE 2107: Environmental Microbiology",
-        "ESE 2104: Environmental Microbiology - Lab",
-        "ESE 2109: Survey and Settlement",
-        "ESE 2106: Survey and Settlement - Lab",
-        "ESE 2111: Soil Mechanics",
-        "ESE 2108: Engineering Drawing Lab",
-        "ESE 2113: Statistics for Environment",
-        "PYQ: Previous Year Questions",
-        "MEQ: Mid Exam Questions"
-    ]
-
-    selected_course = st.selectbox("📚 কোর্স সিলেক্ট করুন:", courses, key="internal_course_select")
-
-    if selected_course.startswith("ESE 2101"):
-        data = {
-            "Roll": [
-                "25103402", "25103405", "25103406", "25103409", "25103413", "25103413",
-                "25103414", "25103415", "25103416", "25103417", "25103420", "25103421",
-                "25103422", "25103423", "25103427", "25103429", "25103430", "25103431",
-                "25103433", "25103434", "25103435", "25103436", "25103437", "25103438",
-                "25103440", "24103403", "24103423"
-            ],
-            "Name of Students": [
-                "FARJANA AKTER MITU", "MOHSINA KHAN", "NOSHIN", "AMIR HAMZA RATUL", "NAZIFA SULTANA", "ELMA",
-                "MD. SAIDUR RAHMAN SAID", "MST. FARHANA ISLAM BORSHA", "MD. KAWSER MAHMUD", "SADIA AFRIN PROMI", "JUNAID HASSAN PROVAT", "SIRAZUM MONIRA",
-                "SHAD EVENY AHMED SHOWRAV", "MD. MAHADI HASAN", "MURSALIN AL IFTI", "RADUYAN HOSEN", "SANIA AKTER", "HRIDOY MIA",
-                "MD. ABU SAIM", "MD. YOUSUF ALI", "MUTAHARA SALSABIL LABIBA", "MAHDI HASAN MARUF", "MST. RATNA AKTER", "MST. KHADILA AKTER",
-                "BORSHA AKTER", "UMME SALMA SADIA", "FARIHA TASNUBA"
-            ],
-            "Attendance (10)": [10, 7, 9, 9, 10, 9, 10, 10, 10, 10, 9, 9, 9, 9, 8, 10, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-            "Mid-1 (10)": [10, 8, 10, 10, 10, 9, 9, 10, 8, 8, 10, 10, 9, 10, 10, 10, 10, 8, 10, 10, 10, 9, 9, 10, 10, 10, 10],
-            "Mid-2 (10)": [8, 8, 9, 9, 9, 9, 10, 10, 9, 9, 9, 10, 10, 9, 7, 9, 7, 10, 10, 10, 10, 8, 10, 9, 9, 7, 10],
-            "Mid-3 (10)": [9, 9, 6, 6, 7, 6, 8, 6, 6, 7, 6, 7, 7, 8, 5, 9, 10, 8, 6, 8, 10, 6, 8, 9, 10, 10, 7],
-            "Total Marks (40)": [37, 32, 34, 34, 36, 33, 37, 36, 33, 34, 34, 36, 35, 36, 30, 38, 36, 35, 36, 38, 40, 33, 37, 38, 39, 37, 37]
-        }
-        df_internal = pd.DataFrame(data)
-        df_internal = df_internal.sort_values(by="Total Marks (40)", ascending=False).reset_index(drop=True)
-        df_internal.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_internal) + 1)])
-        st.dataframe(df_internal, use_container_width=True, hide_index=True)
-    else:
-        st.info(f"📌 **{selected_course}** কোর্সের ইন্টারনাল মার্কশিট শিঘ্রই যুক্ত করা হবে।")
+            st.info(f"📌 **{selected_course}** কোর্সের ইন্টারনাল মার্কশিট শিঘ্রই যুক্ত করা হবে।")
