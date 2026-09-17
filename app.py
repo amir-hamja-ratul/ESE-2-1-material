@@ -56,7 +56,7 @@ components.html("""
     z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     font-size: 0.9rem;
 ">
-    📡 Offline Mode: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
+    📡 Offline Mode: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
 </div>
 
 <script>
@@ -228,7 +228,7 @@ def build_vector_store(course_code, text_hash, raw_text):
     return FAISS.from_texts(chunks, embedding=embeddings)
 
 # ==========================================================
-# 4. ADVANCED MODERN SAAS STYLING (FIXED ULTRA-SHARP LOGO)
+# 4. ADVANCED MODERN SAAS STYLING
 # ==========================================================
 st.markdown("""
 <style>
@@ -265,7 +265,6 @@ st.markdown("""
     #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
     header[data-testid="stHeader"] { background: transparent !important; }
 
-    /* Header Box - Dark Navy */
     .header-box {
         background: linear-gradient(135deg, #020617 0%, #0F172A 60%, #1E293B 100%) !important;
         padding: 32px 24px;
@@ -279,7 +278,6 @@ st.markdown("""
         box-shadow: 0 20px 35px -10px rgba(2, 6, 23, 0.5);
     }
     
-    /* Clean, Crisp & Perfectly Scaled University Logo */
     .uni-logo-wrapper {
         display: inline-block;
         background: #FFFFFF;
@@ -307,7 +305,6 @@ st.markdown("""
         text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     }
 
-    /* GLASSMORPHISM SIDEBAR STYLING */
     section[data-testid="stSidebar"] {
         background: rgba(255, 255, 255, 0.45) !important;
         backdrop-filter: blur(20px) saturate(180%) !important;
@@ -333,7 +330,6 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.85) !important;
     }
 
-    /* Course Card Banner */
     .course-card {
         background: var(--primary-gradient);
         padding: 20px 28px; 
@@ -352,7 +348,6 @@ st.markdown("""
         font-weight: 700;
     }
 
-    /* Stat/Metric Cards */
     .metric-card {
         background: rgba(255, 255, 255, 0.75); 
         backdrop-filter: blur(12px);
@@ -384,7 +379,6 @@ st.markdown("""
         letter-spacing: 0.05em;
     }
 
-    /* Navigation Radio Tabs Styling */
     div[data-testid="stRadio"] {
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(10px);
@@ -431,7 +425,6 @@ st.markdown("""
         font-weight: 700 !important; 
     }
 
-    /* Primary Buttons */
     .stButton > button {
         background: var(--primary-gradient) !important; 
         color: white !important;
@@ -447,7 +440,6 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35) !important;
     }
 
-    /* Skeleton Loader */
     .skeleton-wrap { padding: 20px; background: #FFF; border-radius: 14px; border: 1px solid #E2E8F0; margin: 12px 0; }
     .skeleton-badge { font-weight: 700; color: #4F46E5; margin-bottom: 14px; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
     .skeleton-line { height: 12px; background: #F1F5F9; margin-bottom: 10px; border-radius: 6px; animation: pulse 1.5s infinite ease-in-out; }
@@ -456,7 +448,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# 5. HEADER & NAVIGATION (WITH LOGO LOADER)
+# 5. HEADER & NAVIGATION
 # ==========================================================
 def _load_logo_b64():
     logo_path = os.path.join(ASSETS_DIR, "university_logo.png")
@@ -561,7 +553,7 @@ if admin_pass == "285277":
 
 api_key = st.secrets.get("GOOGLE_API_KEY", os.environ.get("GOOGLE_API_KEY", None))
 if not api_key:
-    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets বা Environment Variable-এ যুক্ত করুন।")
+    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets বা Environment Variable-এ যুক্ত করুন।")
     st.stop()
 os.environ["GOOGLE_API_KEY"] = api_key
 
@@ -666,10 +658,10 @@ if tab_selection == "📖 View & Download":
         st.divider()
         display_pdf(selected_pdf)
     else:
-        st.warning("⚠️ এই কোর্সের জন্য কোনো স্থানীয় PDF ফাইল খুঁজে পাওয়া যায়নি।")
+        st.warning("⚠️ এই কোর্সের জন্য কোনো স্থানীয় PDF ফাইল খুঁজে পাওয়া যায়নি।")
 
 # ==========================================================
-# TAB 2: 📲 OFFLINE SAVED PDFS
+# TAB 2: 📲 OFFLINE SAVED PDFS (BLOB URL FIX APPLIED)
 # ==========================================================
 elif tab_selection == "📲 Offline Saved PDFs":
     st.subheader("📲 Course-Wise Offline PDF Manager")
@@ -708,6 +700,22 @@ elif tab_selection == "📲 Offline Saved PDFs":
 
     <script>
     const courseList = {courses_js_array};
+
+    function base64ToBlobUrl(base64, type = 'application/pdf') {{
+        try {{
+            const binStr = atob(base64);
+            const len = binStr.length;
+            const arr = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {{
+                arr[i] = binStr.charCodeAt(i);
+            }}
+            const blob = new Blob([arr], {{ type: type }});
+            return URL.createObjectURL(blob);
+        }} catch (e) {{
+            console.error("Base64 conversion error:", e);
+            return null;
+        }}
+    }}
     
     function populateDropdown() {{
         let select = document.getElementById("courseFilter");
@@ -734,7 +742,7 @@ elif tab_selection == "📲 Offline Saved PDFs":
         request.onsuccess = function(e) {{
             let db = e.target.result;
             if (!db.objectStoreNames.contains("pdf_store")) {{
-                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
+                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
                 return;
             }}
             let tx = db.transaction("pdf_store", "readonly");
@@ -748,9 +756,9 @@ elif tab_selection == "📲 Offline Saved PDFs":
                     : allFiles.filter(item => item.course_code === selectedCourse);
 
                 if (filtered.length === 0) {{
-                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
+                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
                 }} else {{
-                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
+                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
                     filtered.forEach(item => {{
                         let card = document.createElement("div");
                         card.style.cssText = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 20px;";
@@ -767,11 +775,19 @@ elif tab_selection == "📲 Offline Saved PDFs":
                         header.appendChild(delBtn);
                         card.appendChild(header);
 
-                        let iframe = document.createElement("iframe");
-                        iframe.src = "data:application/pdf;base64," + item.base64;
-                        iframe.style.cssText = "width: 100%; height: 600px; border: 1px solid #CBD5E1; border-radius: 8px;";
-                        
-                        card.appendChild(iframe);
+                        let blobUrl = base64ToBlobUrl(item.base64);
+                        if (blobUrl) {{
+                            let iframe = document.createElement("iframe");
+                            iframe.src = blobUrl;
+                            iframe.style.cssText = "width: 100%; height: 600px; border: 1px solid #CBD5E1; border-radius: 8px;";
+                            card.appendChild(iframe);
+                        }} else {{
+                            let errP = document.createElement("p");
+                            errP.style.color = "red";
+                            errP.innerText = "❌ PDF লোড করতে সমস্যা হয়েছে।";
+                            card.appendChild(errP);
+                        }}
+
                         container.appendChild(card);
                     }});
                 }}
@@ -808,138 +824,111 @@ elif tab_selection == "📲 Offline Saved PDFs":
     }}
 
     populateDropdown();
-    setTimeout(loadOfflinePDFs, 300);
+    loadOfflinePDFs();
     </script>
     """
-    components.html(offline_manager_html, height=750, scrolling=True)
+    components.html(offline_manager_html, height=800, scrolling=True)
 
 # ==========================================================
 # TAB 3: 💬 AI Q&A
 # ==========================================================
 elif tab_selection == "💬 AI Q&A":
-    col_title, col_clear = st.columns([4, 1])
-    with col_title:
-        st.subheader(f"💬 AI Study Assistant - {selected_code}")
-    with col_clear:
-        if st.button("🧹 Clear Chat"):
-            st.session_state.messages = []
-            st.rerun()
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    if user_query := st.chat_input("Ask any question from course materials..."):
-        st.session_state.messages.append({"role": "user", "content": user_query})
-        with st.chat_message("user"):
-            st.markdown(user_query)
-
-        with st.chat_message("assistant"):
-            if vector_store:
-                placeholder = st.empty()
-                placeholder.markdown(skeleton_html("Analyzing Documents"), unsafe_allow_html=True)
-                
-                docs = vector_store.similarity_search(user_query, k=4)
-                answer = ask_gemini(llm, docs, user_query)
-                
-                placeholder.markdown(answer)
-                st.session_state.messages.append({"role": "assistant", "content": answer})
-                track("Ask Question", selected_code)
+    st.subheader(f"💬 AI Course Assistant - {selected_code}")
+    
+    if not vector_store:
+        st.info("ℹ️ এই কোর্সের জন্য কোনো পড়া বা টেক্সট ফাইল পাওয়া যায়নি। PDF আপলোড বা যুক্ত করুন।")
+    else:
+        user_question = st.text_input("❓ আপনার প্রশ্নটি লিখুন (যেমন: What is Hydrology?):")
+        if st.button("🔍 Answer Question", use_container_width=True):
+            if user_question.strip():
+                with st.spinner("🧠 AI নথি বিশ্লেষণ করছে..."):
+                    docs = vector_store.similarity_search(user_question, k=4)
+                    answer = ask_gemini(llm, docs, user_question)
+                    st.markdown("### 🤖 Answer:")
+                    st.write(answer)
+                    track("AI Query", selected_code)
             else:
-                st.error("⚠️ পর্যাপ্ত ফাইল টেক্সট নেই। অনুগ্রহ করে ফাইল আপলোড বা সিলেক্ট করুন।")
+                st.warning("⚠️ অনুগ্রহ করে একটি প্রশ্ন লিখুন।")
 
 # ==========================================================
 # TAB 4: 📝 SMART SUMMARY
 # ==========================================================
 elif tab_selection == "📝 Smart Summary":
-    st.subheader(f"📝 Auto Notes & Summary Generator - {selected_code}")
+    st.subheader(f"📝 Smart Summary - {selected_code}")
     
-    if st.button("✨ Generate Smart Academic Notes", use_container_width=True):
-        if raw_text.strip():
-            placeholder = st.empty()
-            placeholder.markdown(skeleton_html("Summarizing Course Topics"), unsafe_allow_html=True)
-            
-            prompt = (
-                f"Create concise, well-structured academic study notes from the text below.\n"
-                f"Include key definitions, main topics, and bullet points in Bengali:\n\n{raw_text[:12000]}"
-            )
-            try:
-                summary_res = llm.invoke(prompt)
-                content = summary_res.content if hasattr(summary_res, 'content') else str(summary_res)
-                placeholder.markdown(content)
-                track("Generated Summary", selected_code)
-            except Exception as e:
-                placeholder.error(f"Failed to generate summary: {e}")
-        else:
-            st.warning("⚠️ নোট তৈরি করতে ফাইল টেক্সট প্রয়োজন।")
+    if not raw_text.strip():
+        st.info("ℹ️ সামারি তৈরি করার জন্য কোনো টেক্সট পাওয়া যায়নি।")
+    else:
+        if st.button("✨ Generate Key Summary", use_container_width=True):
+            with st.spinner("⚡ সামারি তৈরি হচ্ছে..."):
+                prompt = f"Summarize the following study materials into key points in Bengali language:\n\n{raw_text[:8000]}"
+                try:
+                    response = llm.invoke(prompt)
+                    summary_text = response.content if hasattr(response, 'content') else str(response)
+                    st.markdown("### 📌 Key Highlights:")
+                    st.write(summary_text)
+                    track("Generated Summary", selected_code)
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 # ==========================================================
 # TAB 5: 🎯 EXAM QUIZ
 # ==========================================================
 elif tab_selection == "🎯 Exam Quiz":
-    st.subheader(f"🎯 Interactive Exam Quiz - {selected_code}")
+    st.subheader(f"🎯 Practice Quiz Generator - {selected_code}")
     
-    if st.button("🎲 Generate Practice Quiz", use_container_width=True):
-        if raw_text.strip():
-            placeholder = st.empty()
-            placeholder.markdown(skeleton_html("Creating Quiz Questions"), unsafe_allow_html=True)
-            
-            prompt = (
-                f"Generate 5 Multiple Choice Questions (MCQs) with options and 3 Short Answer Questions "
-                f"based on the text below. Language: Bengali.\n\n{raw_text[:10000]}"
-            )
-            try:
-                quiz_res = llm.invoke(prompt)
-                content = quiz_res.content if hasattr(quiz_res, 'content') else str(quiz_res)
-                placeholder.empty()
-                
-                with st.expander("📝 View Practice Questions & Solutions", expanded=True):
-                    st.markdown(content)
-                track("Generated Quiz", selected_code)
-            except Exception as e:
-                placeholder.error(f"Quiz generation error: {e}")
-        else:
-            st.warning("⚠️ কুইজ তৈরি করতে ডকুমেন্ট টেক্সট পাওয়া যায়নি।")
+    if not raw_text.strip():
+        st.info("ℹ️ কুইজ তৈরির জন্য কোনো টেক্সট পাওয়া যায়নি।")
+    else:
+        if st.button("🎲 Generate 5 Quiz Questions", use_container_width=True):
+            with st.spinner("🎯 কুইজ প্রশ্ন তৈরি হচ্ছে..."):
+                prompt = f"Create 5 practice exam questions with options and correct answers in Bengali based on this context:\n\n{raw_text[:8000]}"
+                try:
+                    response = llm.invoke(prompt)
+                    quiz_text = response.content if hasattr(response, 'content') else str(response)
+                    st.markdown("### 📝 Exam Practice Questions:")
+                    st.write(quiz_text)
+                    track("Quiz Practice", selected_code)
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 # ==========================================================
 # TAB 6: 📈 MY PROGRESS
 # ==========================================================
 elif tab_selection == "📈 My Progress":
-    st.subheader("📈 Personal Activity & Progress Tracker")
+    st.subheader("📈 My Study Progress & Analytics")
     sid = st.session_state.get("student_id")
     
-    if sid:
+    if not sid:
+        st.warning("⚠️ প্রোগ্রেস দেখতে বামপাশের সাইডবার থেকে আপনার Roll Number প্রদান করুন।")
+    else:
         streak = get_study_streak(sid)
         total_act = get_total_activities(sid)
-        progress = get_course_progress(sid)
+        c_progress = get_course_progress(sid)
         
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f'<div class="metric-card"><div class="metric-card-val">🔥 {streak} Days</div><div class="metric-card-lbl">Study Streak</div></div>', unsafe_allow_html=True)
         with c2:
-            st.markdown(f'<div class="metric-card"><div class="metric-card-val">⚡ {total_act}</div><div class="metric-card-lbl">Total Actions</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-card"><div class="metric-card-val">⚡ {total_act}</div><div class="metric-card-lbl">Total Activities</div></div>', unsafe_allow_html=True)
             
-        st.markdown("<br>### 📊 Course Activity Distribution", unsafe_allow_html=True)
-        if progress:
-            df = pd.DataFrame(list(progress.items()), columns=["Course Code", "Total Activities"])
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 📊 Course Breakdown")
+        if c_progress:
+            df = pd.DataFrame(list(c_progress.items()), columns=["Course Code", "Activities Count"])
             st.dataframe(df, use_container_width=True)
         else:
-            st.info("এখনো কোন এক্টিভিটি রেকর্ড হয়নি। পড়ালেখা ও চ্যাট শুরু করলে ডাটা আপডেট হবে।")
-    else:
-        st.info("👉 আপনার প্রতিদিনের অগ্রগতি সেভ করতে সাইডবারে রোল নম্বর যোগ করুন।")
+            st.info("এখনো কোনো অ্যাক্টিভিটি রেকর্ড হয়নি।")
 
 # ==========================================================
 # TAB 7: 📊 LEADERBOARD
 # ==========================================================
 elif tab_selection == "📊 Leaderboard":
-    st.subheader("📊 Top Active Student Leaderboard")
-    board_data = get_leaderboard()
+    st.subheader("📊 Department Study Leaderboard")
+    leaderboard_data = get_leaderboard()
     
-    if board_data:
-        df_lb = pd.DataFrame(board_data, columns=["Student Name", "Roll Number", "Activities", "Last Active"])
+    if leaderboard_data:
+        df_lb = pd.DataFrame(leaderboard_data, columns=["Student Name", "Roll Number", "Total Activities", "Last Active Date"])
         st.dataframe(df_lb, use_container_width=True)
     else:
-        st.info("লিডারবোর্ডে এখনো ডাটা যুক্ত হয়নি। সাইডবারে নাম ও রোল দিয়ে কুইজ বা চ্যাট শুরু করুন!")
+        st.info("লিডারবোর্ডে এখনো কোনো তথ্য নেই।")
