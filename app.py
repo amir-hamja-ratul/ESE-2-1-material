@@ -238,7 +238,7 @@ st.markdown("""
         --primary: #6366F1;
         --primary-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
         --accent-glow: rgba(99, 102, 241, 0.25);
-        --bg-main: #F8FAFC;
+        --bg-main: #F1F5F9;
         --surface: #FFFFFF;
         --border-color: #E2E8F0;
         --text-dark: #0F172A;
@@ -256,7 +256,10 @@ st.markdown("""
         letter-spacing: -0.02em;
     }
 
-    .stApp { background: var(--bg-main); }
+    .stApp { 
+        background: linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 50%, #E0E7FF 100%);
+        background-attachment: fixed;
+    }
     .block-container { padding-top: 1.5rem !important; max-width: 1240px; }
 
     #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
@@ -265,7 +268,7 @@ st.markdown("""
     /* Modern Hero Header Banner */
     .header-box {
         background: linear-gradient(135deg, #090D16 0%, #111827 50%, #1E1B4B 100%);
-        padding: 36px 28px 28px 28px;
+        padding: 32px 28px;
         border-radius: var(--radius-lg);
         text-align: center;
         color: white;
@@ -287,7 +290,7 @@ st.markdown("""
     
     .uni-logo-corner {
         display: block; 
-        margin: 0 auto 16px auto; 
+        margin: 0 auto 14px auto; 
         width: 76px; height: 76px; 
         border-radius: 20px;
         background: #FFFFFF; 
@@ -302,20 +305,33 @@ st.markdown("""
         color: #FFFFFF !important; 
         font-size: 1.85rem; 
         font-weight: 700;
-        margin: 0 0 12px 0; 
+        margin: 0; 
     }
 
-    .badge {
-        background: rgba(255, 255, 255, 0.08); 
-        backdrop-filter: blur(12px); 
-        color: #C7D2FE !important;
-        font-weight: 600; 
-        font-size: 0.82rem; 
-        padding: 6px 20px; 
-        border-radius: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.15); 
-        display: inline-block;
-        letter-spacing: 0.03em;
+    /* GLASSMORPHISM SIDEBAR STYLING */
+    section[data-testid="stSidebar"] {
+        background: rgba(255, 255, 255, 0.45) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.6) !important;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.03) !important;
+    }
+
+    section[data-testid="stSidebar"] .stTextInput input, 
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        background: rgba(255, 255, 255, 0.65) !important;
+        border: 1px solid rgba(203, 213, 225, 0.7) !important;
+        backdrop-filter: blur(8px) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+        transition: all 0.25s ease !important;
+    }
+
+    section[data-testid="stSidebar"] .stTextInput input:focus,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div:focus-within {
+        border-color: #6366F1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+        background: rgba(255, 255, 255, 0.85) !important;
     }
 
     /* Course Card Banner */
@@ -339,8 +355,9 @@ st.markdown("""
 
     /* Stat/Metric Cards */
     .metric-card {
-        background: var(--surface); 
-        border: 1px solid var(--border-color); 
+        background: rgba(255, 255, 255, 0.75); 
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8); 
         border-radius: var(--radius-md);
         padding: 20px; 
         text-align: center; 
@@ -370,10 +387,11 @@ st.markdown("""
 
     /* Navigation Radio Tabs Styling (Segmented Controls) */
     div[data-testid="stRadio"] {
-        background: #F1F5F9;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(10px);
         padding: 6px;
         border-radius: 18px;
-        border: 1px solid #E2E8F0;
+        border: 1px solid rgba(226, 232, 240, 0.8);
         margin-bottom: 20px;
     }
     div[data-testid="stRadio"] > div {
@@ -402,7 +420,7 @@ st.markdown("""
     }
     div[data-testid="stRadio"] label:hover {
         color: #0F172A !important;
-        background: rgba(255,255,255,0.6) !important;
+        background: rgba(255,255,255,0.7) !important;
     }
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {
         background: #FFFFFF !important; 
@@ -412,24 +430,6 @@ st.markdown("""
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p { 
         color: #4F46E5 !important; 
         font-weight: 700 !important; 
-    }
-
-    /* Sidebar Refinement */
-    section[data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
-        border-right: 1px solid #E2E8F0 !important;
-    }
-    
-    /* Sleek Input Fields */
-    .stTextInput input, .stSelectbox select {
-        border-radius: 10px !important;
-        border: 1px solid #E2E8F0 !important;
-        padding: 10px 14px !important;
-        transition: all 0.2s ease !important;
-    }
-    .stTextInput input:focus {
-        border-color: #6366F1 !important;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
     }
 
     /* Primary Buttons */
@@ -479,7 +479,6 @@ st.markdown(f"""
     <div class="header-box">
         {_logo_html}
         <h2>Department of Environmental Science and Engineering</h2>
-        <span class="badge">✨ Academic Resource & Smart AI Workspace</span>
     </div>
 """, unsafe_allow_html=True)
 
@@ -678,7 +677,7 @@ elif tab_selection == "📲 Offline Saved PDFs":
     courses_js_array = str(list(COURSES.keys()))
 
     offline_manager_html = f"""
-    <div style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+    <div style="background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); padding: 22px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
         <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
             <label style="font-weight: 700; color: #0F172A; font-family: sans-serif;">📂 Select Course:</label>
             <select id="courseFilter" onchange="loadOfflinePDFs()" style="
