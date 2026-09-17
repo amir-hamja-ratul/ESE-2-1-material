@@ -56,7 +56,7 @@ components.html("""
     z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     font-size: 0.9rem;
 ">
-    📡 offline mode: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
+    📡 Offline Mode: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
 </div>
 
 <script>
@@ -256,6 +256,13 @@ st.markdown("""
         margin-bottom: 20px; box-shadow: var(--shadow-glow); border: 1px solid rgba(255, 255, 255, 0.08);
     }
     .header-box h2 { color: #FFFFFF !important; font-size: 1.75rem; margin: 0 0 10px 0; }
+    
+    .uni-logo-corner {
+        display: block; margin: 0 auto 12px auto; width: 72px; height: 72px; border-radius: 16px;
+        background: rgba(255,255,255,0.95); padding: 5px; box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        object-fit: contain;
+    }
+
     .badge {
         background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); color: #E4E7FF !important;
         font-weight: 600; font-size: 0.8rem; padding: 6px 18px; border-radius: 30px;
@@ -307,10 +314,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# 5. HEADER & NAVIGATION
+# 5. HEADER & NAVIGATION (WITH LOGO LOADER)
 # ==========================================================
-st.markdown("""
+def _load_logo_b64():
+    logo_path = os.path.join(ASSETS_DIR, "university_logo.png")
+    if os.path.exists(logo_path):
+        try:
+            with open(logo_path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+        except Exception:
+            return ""
+    return ""
+
+_logo_b64 = _load_logo_b64()
+if _logo_b64:
+    _logo_html = f'<img src="data:image/png;base64,{_logo_b64}" class="uni-logo-corner">'
+else:
+    _logo_html = '<img src="https://i.ibb.co.com/8DstCsX1/attachment-158389628.png" class="uni-logo-corner">'
+
+st.markdown(f"""
     <div class="header-box">
+        {_logo_html}
         <h2>🌱 Department of Environmental Science and Engineering</h2>
         <span class="badge">📚 Academic Resource & Smart AI Workspace</span>
     </div>
@@ -547,7 +571,6 @@ elif tab_selection == "📲 Offline Saved PDFs":
             opt.innerText = code;
             select.appendChild(opt);
         }});
-        // Set default to current course if available
         let currentCode = "{selected_code}";
         if(courseList.includes(currentCode)) {{
             select.value = currentCode;
