@@ -1,24 +1,39 @@
 import streamlit as st
+import os
+import glob
+import io
+import sqlite3
+import hashlib
+import base64
+from datetime import date, datetime
+from PIL import Image
+import fitz  # PyMuPDF
+import pandas as pd
 from PyPDF2 import PdfReader
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
-import os
-import glob
-import fitz   # PyMuPDF
-from PIL import Image
-import io
-import pandas as pd
-import sqlite3
-import hashlib
-from datetime import date, datetime
+import streamlit.components.v1 as components
 
 # ==========================================================
-# PAGE CONFIG
+# 1. PAGE CONFIGURATION & SETUP
 # ==========================================================
-st.set_page_config(page_title="EduHub - Academic AI Assistant", page_icon="🎓", layout="wide")
+st.set_page_config(
+    page_title="EduHub - Academic AI Assistant",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(ASSETS_DIR, exist_ok=True)
+
+# Favicon & Head Metas
 st.markdown(
     """
     <head>
@@ -29,693 +44,275 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ==========================================================
-# PROGRESS TRACKING (lightweight, no-password student profile)
-# ==========================================================
-DB_PATH = os.path.join(os.path.dirname(__file__), "eduhub_progress.db")
+# Global Network Connection Status Detector
+components.html("""
+<div id="net-status-banner" style="
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%;
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: white; text-align: center;
+    padding: 10px; font-weight: 700; font-family: sans-serif;
+    z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-size: 0.9rem;
+">
+    📡 offline mode: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
+</div>
 
+<script>
+function updateOnlineStatus() {
+    var banner = document.getElementById("net-status-banner");
+    if (!navigator.onLine) {
+        banner.style.display = "block";
+    } else {
+        banner.style.display = "none";
+    }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+</script>
+""", height=0)
+
+# ==========================================================
+# 2. PROGRESS TRACKING (SQLite Database)
+# ==========================================================
+DB_PATH = os.path.join(BASE_DIR, "eduhub_progress.db")
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS activity_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_id TEXT NOT NULL,
-            student_name TEXT,
-            course_code TEXT NOT NULL,
-            action TEXT NOT NULL,
-            activity_date TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    return conn
-
+    try:
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id TEXT NOT NULL,
+                student_name TEXT,
+                course_code TEXT NOT NULL,
+                action TEXT NOT NULL,
+                activity_date TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        return conn
+    except Exception as e:
+        st.error(f"Database Error: {e}")
+        return None
 
 def log_activity(student_id, student_name, course_code, action):
-    """Record one study action (view/ask/summary/quiz) for a student."""
     if not student_id:
         return
     conn = get_db_connection()
-    conn.execute(
-        "INSERT INTO activity_log (student_id, student_name, course_code, action, activity_date, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (student_id, student_name, course_code, action, date.today().isoformat(), datetime.now().isoformat())
-    )
-    conn.commit()
-    conn.close()
-
+    if conn:
+        try:
+            conn.execute(
+                "INSERT INTO activity_log (student_id, student_name, course_code, action, activity_date, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (student_id, student_name, course_code, action, date.today().isoformat(), datetime.now().isoformat())
+            )
+            conn.commit()
+        except Exception:
+            pass
+        finally:
+            conn.close()
 
 def get_study_streak(student_id):
-    """Consecutive days (ending today) the student had at least one activity."""
-    if not student_id:
-        return 0
+    if not student_id: return 0
     conn = get_db_connection()
-    rows = conn.execute(
-        "SELECT DISTINCT activity_date FROM activity_log WHERE student_id = ?",
-        (student_id,)
-    ).fetchall()
+    if not conn: return 0
+    rows = conn.execute("SELECT DISTINCT activity_date FROM activity_log WHERE student_id = ?", (student_id,)).fetchall()
     conn.close()
-    if not rows:
-        return 0
+    if not rows: return 0
     activity_dates = {date.fromisoformat(r[0]) for r in rows}
-    streak = 0
-    cursor_date = date.today()
+    streak, cursor_date = 0, date.today()
     while cursor_date in activity_dates:
         streak += 1
         cursor_date = date.fromordinal(cursor_date.toordinal() - 1)
     return streak
 
-
 def get_total_activities(student_id):
-    if not student_id:
-        return 0
+    if not student_id: return 0
     conn = get_db_connection()
+    if not conn: return 0
     row = conn.execute("SELECT COUNT(*) FROM activity_log WHERE student_id = ?", (student_id,)).fetchone()
     conn.close()
     return row[0] if row else 0
 
-
 def get_course_progress(student_id):
-    """Returns {course_code: activity_count} for this student."""
-    if not student_id:
-        return {}
+    if not student_id: return {}
     conn = get_db_connection()
-    rows = conn.execute(
-        "SELECT course_code, COUNT(*) FROM activity_log WHERE student_id = ? GROUP BY course_code",
-        (student_id,)
-    ).fetchall()
+    if not conn: return {}
+    rows = conn.execute("SELECT course_code, COUNT(*) FROM activity_log WHERE student_id = ? GROUP BY course_code", (student_id,)).fetchall()
     conn.close()
     return {r[0]: r[1] for r in rows}
 
+def get_leaderboard():
+    conn = get_db_connection()
+    if not conn: return []
+    rows = conn.execute(
+        "SELECT student_name, student_id, COUNT(*) as total_act, MAX(activity_date) as last_active "
+        "FROM activity_log GROUP BY student_id ORDER BY total_act DESC LIMIT 10"
+    ).fetchall()
+    conn.close()
+    return rows
 
 def track(action, course_code):
-    """Convenience wrapper: logs activity only if the student has entered their ID."""
     sid = st.session_state.get("student_id")
     sname = st.session_state.get("student_name", "")
     if sid:
         log_activity(sid, sname, course_code, action)
 
-
 # ==========================================================
-# AI + PDF HELPER FUNCTIONS
+# 3. HELPER FUNCTIONS & AI RAG
 # ==========================================================
 def ask_gemini(llm, docs, question):
     context = "\n\n".join([doc.page_content for doc in docs])
-    prompt = f"নিচের তথ্যগুলোর ওপর ভিত্তি করে প্রশ্নের উত্তর দাও:\n\n{context}\n\nপ্রশ্ন: {question}"
-    response = llm.invoke(prompt)
-    if hasattr(response, 'content'):
-        if isinstance(response.content, str):
-            return response.content
-        elif isinstance(response.content, list):
-            return "".join([item.get('text', '') if isinstance(item, dict) else str(item) for item in response.content])
-    return str(response)
-
+    prompt = f"Role: Expert Academic Assistant.\nContext:\n{context}\n\nQuestion: {question}\n\nAnswer in Bengali clearly:"
+    try:
+        response = llm.invoke(prompt)
+        return response.content if hasattr(response, 'content') else str(response)
+    except Exception as e:
+        return f"⚠️ AI Error: {str(e)}"
 
 def display_pdf(file_path):
-    doc = fitz.open(file_path)
-    st.info(f"📖 **Displaying Total Pages:** {len(doc)}")
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        pix = page.get_pixmap(dpi=150)
-        img_bytes = pix.tobytes("png")
-        image = Image.open(io.BytesIO(img_bytes))
-        st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+    try:
+        doc = fitz.open(file_path)
+        st.info(f"📖 **Total Pages:** {len(doc)}")
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            pix = page.get_pixmap(dpi=130)
+            img_bytes = pix.tobytes("png")
+            image = Image.open(io.BytesIO(img_bytes))
+            st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
+    except Exception as e:
+        st.error(f"Error viewing PDF: {e}")
 
-
-def skeleton_html(label="Generating response", lines=(95, 88, 92, 60, 80)):
-    """Returns shimmer-style skeleton placeholder HTML shown while the AI is thinking."""
-    bars = "".join(f'<div class="skeleton-line" style="width:{w}%"></div>' for w in lines)
+def skeleton_html(label="Processing"):
     return f"""
         <div class="skeleton-wrap">
             <div class="skeleton-badge"><span class="dot"></span>{label}...</div>
-            {bars}
+            <div class="skeleton-line" style="width:90%"></div>
+            <div class="skeleton-line" style="width:75%"></div>
+            <div class="skeleton-line" style="width:60%"></div>
         </div>
     """
 
-
-# ==========================================================
-# CACHING — heavy operations run once and are reused
-# (course switches / reruns become instant instead of re-reading
-#  PDFs or rebuilding the AI search index every time)
-# ==========================================================
-@st.cache_resource(show_spinner="🧠 Loading AI embedding model...")
+@st.cache_resource(show_spinner=False)
 def get_embeddings_model():
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-
 
 @st.cache_resource(show_spinner=False)
 def get_llm(_api_key):
     return ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=_api_key, temperature=0.3)
 
-
-@st.cache_data(show_spinner="📚 Reading course PDFs...")
+@st.cache_data(show_spinner=False)
 def extract_text_from_local_pdfs(pdf_paths, cache_key):
-    """cache_key includes file mtimes so the cache auto-invalidates if files change."""
-    raw = ""
-    pages = 0
+    raw, pages = "", 0
     for pdf_path in pdf_paths:
-        reader = PdfReader(pdf_path)
-        pages += len(reader.pages)
-        for page in reader.pages:
-            raw += page.extract_text() or ""
+        try:
+            reader = PdfReader(pdf_path)
+            pages += len(reader.pages)
+            for page in reader.pages:
+                text = page.extract_text()
+                if text: raw += text + "\n"
+        except Exception:
+            pass
     return raw, pages
 
-
-@st.cache_resource(show_spinner="⚙️ Indexing documents for AI search...")
+@st.cache_resource(show_spinner=False)
 def build_vector_store(course_code, text_hash, raw_text):
+    if not raw_text.strip(): return None
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = text_splitter.split_text(raw_text)
     embeddings = get_embeddings_model()
     return FAISS.from_texts(chunks, embedding=embeddings)
 
-
 # ==========================================================
-# MODERN PROFESSIONAL UI/UX CSS (Glassmorphism + Refined System)
+# 4. CUSTOM STYLING
 # ==========================================================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
     :root {
-        --ink-950: #05070F;
-        --ink-900: #0B0F1E;
-        --ink-800: #131A2E;
-        --violet: #6D5DFC;
-        --violet-deep: #4C3FD7;
-        --cyan: #22D3EE;
-        --lime: #A3E635;
-        --amber: #FBBF24;
-        --surface: #FFFFFF;
-        --surface-soft: #F6F7FB;
-        --border: #E7E9F3;
-        --text-main: #10121C;
-        --text-muted: #6B7186;
-        --radius-xl: 26px;
-        --radius-lg: 20px;
-        --radius-md: 14px;
-        --radius-sm: 10px;
-        --shadow-soft: 0 6px 24px -8px rgba(16, 18, 28, 0.08);
-        --shadow-elevated: 0 24px 48px -16px rgba(76, 63, 215, 0.35);
-        --shadow-glow: 0 0 0 1px rgba(255,255,255,0.06), 0 30px 60px -20px rgba(109, 93, 252, 0.55);
+        --violet: #6D5DFC; --violet-deep: #4C3FD7;
+        --surface: #FFFFFF; --border: #E7E9F3; --text-muted: #6B7186;
+        --radius-xl: 22px; --radius-lg: 16px; --radius-md: 12px;
+        --shadow-glow: 0 10px 30px -10px rgba(109, 93, 252, 0.35);
     }
 
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }
+    html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+    h1, h2, h3 { font-family: 'Space Grotesk', sans-serif !important; }
 
-    h1, h2, h3, .header-box h2, .course-card h1 {
-        font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif !important;
-    }
+    .stApp { background: #FAFBFF; }
+    .block-container { padding-top: 1.8rem !important; max-width: 1180px; }
 
-    .stApp {
-        background:
-            radial-gradient(circle at 8% 0%, rgba(109, 93, 252, 0.07), transparent 40%),
-            radial-gradient(circle at 95% 15%, rgba(34, 211, 238, 0.08), transparent 40%),
-            #FAFBFF;
-    }
-
-    .block-container {
-        padding-top: 2.2rem !important;
-        max-width: 1180px;
-    }
-
-    /* Hide Streamlit chrome, but KEEP the sidebar toggle button fully working */
     #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
-    header[data-testid="stHeader"] {
-        background: transparent !important;
-        box-shadow: none !important;
-    }
-    /* Force the sidebar open/close arrow to always be visible and on top */
-    [data-testid="stSidebarCollapsedControl"] {
-        visibility: visible !important;
-        display: flex !important;
-        opacity: 1 !important;
-        z-index: 999999 !important;
-        position: fixed !important;
-        top: 12px !important;
-        left: 12px !important;
-        background: #FFFFFF !important;
-        border-radius: 10px !important;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18) !important;
-        padding: 4px !important;
-    }
-    [data-testid="stSidebarCollapsedControl"] svg {
-        fill: var(--ink-950) !important;
-    }
+    header[data-testid="stHeader"] { background: transparent !important; }
 
-    /* ---------------- HERO HEADER (glass + noise) ---------------- */
     .header-box {
-        background:
-            radial-gradient(ellipse 70% 100% at 10% 0%, rgba(109, 93, 252, 0.55), transparent 60%),
-            radial-gradient(ellipse 60% 90% at 100% 100%, rgba(34, 211, 238, 0.35), transparent 55%),
-            linear-gradient(155deg, #05070F 0%, #0B0F1E 45%, #131A2E 100%);
-        padding: 46px 32px 40px 32px;
-        border-radius: var(--radius-xl);
-        text-align: center;
-        color: white;
-        margin-bottom: 22px;
-        box-shadow: var(--shadow-glow);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        position: relative;
-        overflow: hidden;
+        background: linear-gradient(155deg, #05070F 0%, #0B0F1E 50%, #131A2E 100%);
+        padding: 30px 24px; border-radius: var(--radius-xl); text-align: center; color: white;
+        margin-bottom: 20px; box-shadow: var(--shadow-glow); border: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .header-box::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
-        background-size: 22px 22px;
-        opacity: 0.35;
-        pointer-events: none;
-    }
-    .header-box h2 {
-        color: #FFFFFF !important;
-        font-size: 1.95rem;
-        font-weight: 700;
-        margin: 0 0 16px 0;
-        letter-spacing: -0.02em;
-        position: relative;
-    }
+    .header-box h2 { color: #FFFFFF !important; font-size: 1.75rem; margin: 0 0 10px 0; }
     .badge {
-        background: rgba(255,255,255,0.08);
-        backdrop-filter: blur(12px);
-        color: #E4E7FF !important;
-        font-weight: 600;
-        font-size: 0.82rem;
-        padding: 9px 24px;
-        border-radius: 30px;
-        display: inline-block;
-        letter-spacing: 0.04em;
-        border: 1px solid rgba(255,255,255,0.18);
-        position: relative;
-    }
-    .badge::before {
-        content: "●";
-        color: var(--lime);
-        margin-right: 8px;
-        font-size: 0.6rem;
+        background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); color: #E4E7FF !important;
+        font-weight: 600; font-size: 0.8rem; padding: 6px 18px; border-radius: 30px;
+        border: 1px solid rgba(255,255,255,0.15); display: inline-block;
     }
 
-    /* ---------------- UNIVERSITY LOGO (top-center of header) ---------------- */
-    .uni-logo-corner {
-        position: relative;
-        display: block;
-        margin: 0 auto 16px auto;
-        width: 92px;
-        height: 92px;
-        border-radius: 18px;
-        background: rgba(255,255,255,0.96);
-        padding: 10px;
-        box-shadow: 0 8px 20px -4px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15);
-        z-index: 2;
-        object-fit: contain;
-    }
-    @media (max-width: 768px) {
-        .uni-logo-corner {
-            width: 72px;
-            height: 72px;
-            padding: 8px;
-        }
-    }
-
-    /* ---------------- COURSE TITLE CARD ---------------- */
     .course-card {
-        background: linear-gradient(120deg, #6D5DFC 0%, #5847E8 55%, #4C3FD7 100%);
-        padding: 28px 34px;
-        border-radius: var(--radius-lg);
-        color: white;
-        margin-bottom: 28px;
-        box-shadow: var(--shadow-elevated);
-        border: 1px solid rgba(255,255,255,0.14);
-        position: relative;
-        overflow: hidden;
+        background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%);
+        padding: 18px 24px; border-radius: var(--radius-lg); color: white; margin-bottom: 20px;
+        box-shadow: var(--shadow-glow);
     }
-    .course-card::after {
-        content: "";
-        position: absolute;
-        top: -40%;
-        right: -8%;
-        width: 220px;
-        height: 220px;
-        background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%);
-        border-radius: 50%;
-    }
-    .course-card h1 {
-        color: #FFFFFF !important;
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin: 0;
-        letter-spacing: -0.02em;
-        position: relative;
-    }
+    .course-card h1 { color: #FFFFFF !important; font-size: 1.45rem; margin: 0; }
 
-    /* ---------------- METRIC CARDS ---------------- */
     .metric-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 28px 20px;
-        text-align: center;
-        box-shadow: var(--shadow-soft);
-        transition: transform 0.25s cubic-bezier(.2,.8,.2,1), box-shadow 0.25s ease, border-color 0.25s ease;
-        position: relative;
-    }
-    .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 18px 36px -12px rgba(109, 93, 252, 0.3);
-        border-color: rgba(109, 93, 252, 0.35);
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+        padding: 16px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
     .metric-card-val {
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 2.7rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #6D5DFC, #22D3EE);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 6px;
-        line-height: 1;
+        font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700;
+        color: #6D5DFC; margin-bottom: 2px;
     }
-    .metric-card-lbl {
-        font-size: 0.76rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 1.4px;
-    }
+    .metric-card-lbl { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
 
-    /* ---------------- SIDEBAR ---------------- */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(190deg, #05070F 0%, #0B0F1E 60%, #131A2E 100%);
-        border-right: 1px solid rgba(255,255,255,0.06);
-    }
-    section[data-testid="stSidebar"] * {
-        color: #C9CDE0 !important;
-    }
-    section[data-testid="stSidebar"] h3 {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-        font-size: 1.05rem !important;
-    }
-    section[data-testid="stSidebar"] .stSelectbox label,
-    section[data-testid="stSidebar"] .stTextInput label {
-        color: #8B90A8 !important;
-        font-weight: 600 !important;
-        font-size: 0.78rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
-    section[data-testid="stSidebar"] input {
-        background-color: #161C33 !important;
-        border: 1px solid rgba(255,255,255,0.14) !important;
-        border-radius: 12px !important;
-        color: #FFFFFF !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] div {
-        background-color: transparent !important;
-        color: #FFFFFF !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] span {
-        color: #FFFFFF !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
-        fill: #FFFFFF !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"]:hover > div {
-        border-color: rgba(109, 93, 252, 0.5) !important;
-    }
-    /* Dropdown popover list (renders in a portal, outside the sidebar DOM) */
-    div[data-baseweb="popover"] li,
-    div[data-baseweb="menu"] li {
-        background-color: #161C33 !important;
-        color: #FFFFFF !important;
-    }
-    div[data-baseweb="popover"] li:hover,
-    div[data-baseweb="menu"] li:hover {
-        background-color: #2A2F55 !important;
-    }
-    section[data-testid="stSidebar"] hr {
-        border-color: rgba(255,255,255,0.08) !important;
-        margin: 20px 0 !important;
-    }
-
-    /* ---------------- SINGLE LINE PILL TABS ---------------- */
     div[data-testid="stRadio"] > div {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        gap: 10px !important;
-        background: transparent !important;
-        padding: 6px 4px 16px 4px !important;
-        width: 100%;
+        display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important;
+        overflow-x: auto !important; gap: 8px !important; padding: 4px 2px 14px 2px !important;
     }
-
-    div[data-testid="stRadio"] input[type="radio"],
-    div[data-testid="stRadio"] div[data-baseweb="radio"] {
-        display: none !important;
-    }
-
+    div[data-testid="stRadio"] input[type="radio"] { display: none !important; }
     div[data-testid="stRadio"] label {
-        background-color: var(--surface) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 30px !important;
-        padding: 11px 20px !important;
-        color: #454A5E !important;
-        font-weight: 600 !important;
-        font-size: 0.87rem !important;
-        white-space: nowrap !important;
-        box-shadow: 0 2px 8px rgba(16, 18, 28, 0.04) !important;
-        cursor: pointer !important;
-        transition: all 0.22s cubic-bezier(.2,.8,.2,1) !important;
+        background-color: var(--surface) !important; border: 1px solid var(--border) !important;
+        border-radius: 25px !important; padding: 8px 18px !important; color: #454A5E !important;
+        font-weight: 600 !important; font-size: 0.85rem !important; cursor: pointer !important;
+        white-space: nowrap !important; transition: all 0.2s ease;
     }
-
-    div[data-testid="stRadio"] label:hover {
-        border-color: rgba(109, 93, 252, 0.45) !important;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px -6px rgba(109, 93, 252, 0.25) !important;
-    }
-
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {
-        background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%) !important;
-        color: #FFFFFF !important;
-        border: 1px solid #4C3FD7 !important;
-        box-shadow: 0 10px 22px -6px rgba(109, 93, 252, 0.6) !important;
+        background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%) !important; color: #FFFFFF !important;
+    }
+    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p { color: #FFFFFF !important; font-weight: 700 !important; }
+
+    .stButton > button {
+        background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%) !important; color: white !important;
+        border-radius: 12px !important; padding: 10px 20px !important; font-weight: 700 !important; border: none !important;
     }
 
-    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-    }
-
-    /* ---------------- BUTTONS ---------------- */
-    .stButton > button, [data-testid="stDownloadButton"] > button {
-        background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%) !important;
-        color: white !important;
-        border-radius: 14px !important;
-        padding: 13px 26px !important;
-        font-weight: 700 !important;
-        font-size: 0.92rem !important;
-        border: none !important;
-        box-shadow: 0 10px 22px -8px rgba(109, 93, 252, 0.5) !important;
-        width: 100%;
-        transition: transform 0.2s cubic-bezier(.2,.8,.2,1), box-shadow 0.2s ease, filter 0.2s ease !important;
-        letter-spacing: 0.01em;
-    }
-    .stButton > button:hover, [data-testid="stDownloadButton"] > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 30px -8px rgba(109, 93, 252, 0.65) !important;
-        filter: brightness(1.06);
-    }
-    .stButton > button:active, [data-testid="stDownloadButton"] > button:active {
-        transform: translateY(0px);
-    }
-
-    /* ---------------- SECTION HEADINGS ---------------- */
-    h3 {
-        font-weight: 700 !important;
-        color: var(--text-main) !important;
-        letter-spacing: -0.015em;
-        margin-bottom: 6px !important;
-    }
-    h3::after {
-        content: "";
-        display: block;
-        width: 42px;
-        height: 4px;
-        margin-top: 10px;
-        border-radius: 4px;
-        background: linear-gradient(90deg, #6D5DFC, #22D3EE);
-    }
-
-    /* ---------------- INPUTS (selectbox / text input / file uploader) ---------------- */
-    div[data-baseweb="select"] > div {
-        border-radius: 12px !important;
-        border: 1px solid var(--border) !important;
-        box-shadow: none !important;
-    }
-    div[data-baseweb="select"] > div:hover {
-        border-color: rgba(109, 93, 252, 0.5) !important;
-    }
-    div[data-testid="stFileUploaderDropzone"] {
-        border-radius: var(--radius-md) !important;
-        border: 1.5px dashed rgba(109, 93, 252, 0.35) !important;
-        background: linear-gradient(180deg, rgba(109,93,252,0.03), rgba(34,211,238,0.03)) !important;
-    }
-
-    /* ---------------- CHAT ---------------- */
-    div[data-testid="stChatMessage"] {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-soft);
-        padding: 6px 10px;
-        margin-bottom: 4px;
-    }
-    div[data-testid="stChatInput"] {
-        border-radius: var(--radius-md) !important;
-    }
-    div[data-testid="stChatInput"] textarea {
-        border-radius: var(--radius-md) !important;
-    }
-
-    /* ---------------- DATAFRAME ---------------- */
-    div[data-testid="stDataFrame"] {
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow-soft);
-    }
-
-    /* ---------------- ALERTS ---------------- */
-    div[data-testid="stAlert"] {
-        border-radius: var(--radius-sm) !important;
-        border: 1px solid var(--border) !important;
-    }
-
-    /* ---------------- SCROLLBAR ---------------- */
-    ::-webkit-scrollbar { height: 8px; width: 8px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #6D5DFC, #4C3FD7);
-        border-radius: 10px;
-    }
-
-    /* ---------------- DIVIDER ---------------- */
-    hr {
-        border-color: var(--border) !important;
-    }
-
-    /* ---------------- FILE PICKER CARD (tinted, not white) ---------------- */
-    .st-key-file_picker_card {
-        background: linear-gradient(135deg, rgba(109, 93, 252, 0.08), rgba(34, 211, 238, 0.06));
-        border: 1px solid rgba(109, 93, 252, 0.18);
-        border-radius: var(--radius-md);
-        padding: 22px 24px 8px 24px;
-        box-shadow: var(--shadow-soft);
-    }
-    .st-key-file_picker_card div[data-baseweb="select"] > div {
-        background-color: #FFFFFF !important;
-    }
-
-    /* ---------------- SIDEBAR SEARCH RESULT BUTTONS ---------------- */
-    section[data-testid="stSidebar"] .stButton > button {
-        background: rgba(109, 93, 252, 0.12) !important;
-        color: #E4E7FF !important;
-        border: 1px solid rgba(109, 93, 252, 0.3) !important;
-        text-align: left !important;
-        justify-content: flex-start !important;
-        box-shadow: none !important;
-        font-weight: 500 !important;
-        font-size: 0.82rem !important;
-        padding: 9px 14px !important;
-        margin-bottom: 6px !important;
-    }
-    section[data-testid="stSidebar"] .stButton > button:hover {
-        background: rgba(109, 93, 252, 0.28) !important;
-        border-color: rgba(109, 93, 252, 0.6) !important;
-        transform: translateX(2px);
-    }
-    section[data-testid="stSidebar"] .stButton > button p {
-        color: #E4E7FF !important;
-        text-align: left !important;
-    }
-
-    /* ---------------- TAB CONTENT FADE-IN ---------------- */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
-    .st-key-tab_content_area {
-        animation: fadeInUp 0.45s cubic-bezier(0.22, 0.8, 0.32, 1);
-    }
-
-    /* ---------------- SKELETON SHIMMER LOADING ---------------- */
-    @keyframes shimmerMove {
-        0%   { background-position: -420px 0; }
-        100% { background-position: 420px 0; }
-    }
-    .skeleton-wrap {
-        padding: 4px 2px 8px 2px;
-    }
-    .skeleton-line {
-        height: 14px;
-        border-radius: 7px;
-        margin-bottom: 13px;
-        background: linear-gradient(90deg, #EBEDF7 0px, #DCE0F5 60px, #EBEDF7 120px);
-        background-size: 840px 100%;
-        animation: shimmerMove 1.3s infinite linear;
-    }
-    .skeleton-line:last-child { margin-bottom: 0; }
-    .skeleton-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: var(--violet);
-        margin-bottom: 14px;
-    }
-    .skeleton-badge .dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--violet), var(--cyan));
-        animation: pulseDot 1s infinite ease-in-out;
-    }
-    @keyframes pulseDot {
-        0%, 100% { opacity: 0.3; transform: scale(0.85); }
-        50% { opacity: 1; transform: scale(1.15); }
-    }
+    .skeleton-wrap { padding: 16px; background: #FFF; border-radius: 12px; border: 1px solid #E7E9F3; margin: 10px 0; }
+    .skeleton-badge { font-weight: 600; color: #6D5DFC; margin-bottom: 12px; font-size: 0.85rem; }
+    .skeleton-line { height: 12px; background: #E7E9F3; margin-bottom: 8px; border-radius: 6px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# TOP HEADER UI
+# 5. HEADER & NAVIGATION
 # ==========================================================
-import base64
-
-def _load_logo_b64():
-    logo_path = os.path.join(os.path.dirname(__file__), "assets", "university_logo.png")
-    try:
-        with open(logo_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except FileNotFoundError:
-        return ""
-
-_logo_b64 = _load_logo_b64()
-_logo_html = (
-    f'<img src="data:image/png;base64,{_logo_b64}" class="uni-logo-corner">'
-    if _logo_b64 else ""
-)
-
-st.markdown(f"""
+st.markdown("""
     <div class="header-box">
-        {_logo_html}
         <h2>🌱 Department of Environmental Science and Engineering</h2>
-        <span class="badge">📚 2nd Year 1st Semester</span>
+        <span class="badge">📚 Academic Resource & Smart AI Workspace</span>
     </div>
 """, unsafe_allow_html=True)
 
@@ -740,54 +337,16 @@ COURSES = {
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
-    st.markdown("""
-        <div style="display: flex; justify-content: center; margin-bottom: 14px; margin-top: 6px;">
-            <div style="width: 84px; height: 84px; border-radius: 22px; background: linear-gradient(135deg, #6D5DFC, #22D3EE); display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 26px -6px rgba(109,93,252,0.55); border: 1px solid rgba(255,255,255,0.15); font-size: 2.4rem; line-height: 1;">
-                🎓
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; margin-top: 0; margin-bottom: 18px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
-
-    # ---------------- GLOBAL SEARCH (courses + PDF filenames) ----------------
-    search_query = st.text_input(
-        "🔍 Search Courses & Files",
-        placeholder="e.g. hydrology, syllabus, quiz.pdf",
-        key="global_search_input"
-    )
-
+    st.markdown("<h3 style='text-align: center;'>Workspace Navigation</h3>", unsafe_allow_html=True)
+    
+    search_query = st.text_input("🔍 Search Courses", placeholder="e.g. hydrology", key="global_search_input")
     if search_query.strip():
         q = search_query.strip().lower()
-
-        matched_courses = [
-            (code, title) for code, title in COURSES.items()
-            if q in code.lower() or q in title.lower()
-        ]
-
-        matched_files = []
-        for code in COURSES:
-            folder = os.path.join("data", code.replace(" ", "_"))
-            for pdf_path in glob.glob(f"{folder}/*.pdf"):
-                fname = os.path.basename(pdf_path)
-                if q in fname.lower():
-                    matched_files.append((code, fname))
-
-        if matched_courses or matched_files:
-            st.markdown("<p style='font-size:0.78rem; font-weight:700; color:#8B90A8; text-transform:uppercase; letter-spacing:0.8px; margin:14px 0 8px 0;'>🔎 Results</p>", unsafe_allow_html=True)
-
-            for code, title in matched_courses[:6]:
-                if st.button(f"📘 {code} — {title}", key=f"search_course_{code}", use_container_width=True):
-                    st.session_state["course_selectbox"] = f"{code} - {title}"
-                    st.rerun()
-
-            for code, fname in matched_files[:6]:
-                title = COURSES[code]
-                if st.button(f"📄 {fname}", key=f"search_file_{code}_{fname}", use_container_width=True):
-                    st.session_state["course_selectbox"] = f"{code} - {title}"
-                    st.rerun()
-        else:
-            st.caption("😕 কোনো ফলাফল পাওয়া যায়নি।")
-
+        matched = [(code, title) for code, title in COURSES.items() if q in code.lower() or q in title.lower()]
+        for code, title in matched[:5]:
+            if st.button(f"📘 {code} — {title}", key=f"search_{code}", use_container_width=True):
+                st.session_state["course_selectbox"] = f"{code} - {title}"
+                st.rerun()
         st.divider()
 
     selected_option = st.selectbox("📌 Select Course Material", course_options, key="course_selectbox")
@@ -795,22 +354,20 @@ with st.sidebar:
     selected_title = COURSES[selected_code]
 
     st.divider()
-
-    st.markdown("👤 **YOUR PROFILE** <span style='color:#8B90A8; font-weight:500; font-size:0.72rem;'>(for progress tracking)</span>", unsafe_allow_html=True)
-    student_name_input = st.text_input("Your Name", placeholder="e.g. Mursalin Al Ifti", key="student_name_field")
+    st.markdown("👤 **YOUR PROFILE**", unsafe_allow_html=True)
+    student_name_input = st.text_input("Your Name", placeholder="e.g. Amir Hamja Ratul", key="student_name_field")
     student_roll_input = st.text_input("Roll Number", placeholder="e.g. 25103402", key="student_roll_field")
+    
     if student_roll_input.strip():
         st.session_state["student_id"] = student_roll_input.strip()
         st.session_state["student_name"] = student_name_input.strip() or student_roll_input.strip()
-        st.caption(f"✅ Tracking progress for **{st.session_state['student_name']}**")
+        st.caption(f"✅ Active: **{st.session_state['student_name']}**")
     else:
         st.session_state["student_id"] = None
-        st.caption("↳ রোল নম্বর দিলে তোমার পড়াশোনার streak ও progress সেভ হবে।")
 
     st.divider()
     query_params = st.query_params
-    admin_pass = st.text_input("🔒 Admin Secret Key", type="password") if query_params.get("admin") == "true" else ""
-    st.markdown("<p style='text-align: center; color: #94A3B8; font-size: 0.78rem; margin-top: 26px;'>Designed for ESE-10 Batch.</p>", unsafe_allow_html=True)
+    admin_pass = st.text_input("🔒 Admin Key", type="password") if query_params.get("admin") == "true" else ""
 
 st.markdown(f"""
     <div class="course-card">
@@ -818,69 +375,45 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-if admin_pass == "285277":
-    st.success("⚡ Admin Mode Enabled: Ready to upload new materials.")
-    uploaded_files = st.file_uploader("📥 Upload Course Materials (PDF format)", accept_multiple_files=True, type="pdf")
-else:
-    uploaded_files = None
+folder_code = selected_code.replace(" ", "_")
+course_folder = os.path.join(DATA_DIR, folder_code)
+os.makedirs(course_folder, exist_ok=True)
 
-api_key = st.secrets.get("GOOGLE_API_KEY", None)
+if admin_pass == "285277":
+    st.success("⚡ Admin Mode Active")
+    uploaded_files = st.file_uploader("📥 Upload PDFs", accept_multiple_files=True, type="pdf")
+    if uploaded_files:
+        for u_file in uploaded_files:
+            with open(os.path.join(course_folder, u_file.name), "wb") as f:
+                f.write(u_file.getbuffer())
+        st.toast("✅ Files saved successfully!", icon="🎉")
+        st.rerun()
+
+api_key = st.secrets.get("GOOGLE_API_KEY", os.environ.get("GOOGLE_API_KEY", None))
 if not api_key:
-    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets-এ যোগ করুন।")
+    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets বা Environment Variable-এ যুক্ত করুন।")
     st.stop()
 os.environ["GOOGLE_API_KEY"] = api_key
 
-folder_code = selected_code.replace(" ", "_")
-course_folder = os.path.join("data", folder_code)
-local_pdfs = glob.glob(f"{course_folder}/*.pdf")
+local_pdfs = glob.glob(os.path.join(course_folder, "*.pdf"))
+raw_text, total_pages = "", 0
+files_count = len(local_pdfs)
 
-raw_text = ""
-total_pages = 0
-files_count = 0
-
-if uploaded_files:
-    # Uploaded files aren't cached (fresh each session), but this path is admin-only and rare.
-    files_count = len(uploaded_files)
-    for pdf in uploaded_files:
-        pdf_reader = PdfReader(pdf)
-        total_pages += len(pdf_reader.pages)
-        for page in pdf_reader.pages:
-            raw_text += page.extract_text() or ""
-elif local_pdfs:
-    files_count = len(local_pdfs)
-    # mtimes force the cache to refresh automatically if a PDF is added/changed
+if local_pdfs:
     mtimes = tuple(os.path.getmtime(p) for p in local_pdfs)
     raw_text, total_pages = extract_text_from_local_pdfs(tuple(local_pdfs), mtimes)
 
 if raw_text.strip():
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-card-val">{files_count}</div>
-                <div class="metric-card-lbl">📂 Loaded Documents</div>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><div class="metric-card-val">{files_count}</div><div class="metric-card-lbl">📂 Documents</div></div>', unsafe_allow_html=True)
     with col2:
-        st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-card-val">{total_pages}</div>
-                <div class="metric-card-lbl">📄 Total Processed Pages</div>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><div class="metric-card-val">{total_pages}</div><div class="metric-card-lbl">📄 Total Pages</div></div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# --- SINGLE LINE HORIZONTAL BUTTON TABS ---
 tab_selection = st.radio(
     "Navigation Tabs",
-    [
-        "📖 View & Download", "💬 AI Q&A", "📝 Smart Summary",
-        "🎯 Exam Quiz", "📈 My Progress", "📊 Leaderboard"
-    ],
+    ["📖 View & Download", "📲 Offline Saved PDFs", "💬 AI Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "📈 My Progress", "📊 Leaderboard"],
     horizontal=True,
     label_visibility="collapsed"
 )
@@ -892,171 +425,352 @@ if raw_text.strip():
     text_hash = hashlib.md5(raw_text.encode("utf-8")).hexdigest()
     vector_store = build_vector_store(selected_code, text_hash, raw_text)
 
+# ==========================================================
+# TAB 1: 📖 VIEW & DOWNLOAD
+# ==========================================================
+if tab_selection == "📖 View & Download":
+    st.subheader(f"📖 View & Download - {selected_code}")
+    track("View Document", selected_code)
+    
+    if local_pdfs:
+        selected_pdf = st.selectbox("📄 Select PDF File", local_pdfs, format_func=os.path.basename)
+        pdf_name = os.path.basename(selected_pdf)
+        
+        with open(selected_pdf, "rb") as f:
+            pdf_bytes = f.read()
+            base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
 
-with st.container(key="tab_content_area"):
-    if tab_selection == "📖 View & Download":
-        st.markdown("### 📄 Course Documents Viewer")
-        if local_pdfs:
-            with st.container(key="file_picker_card"):
-                selected_pdf = st.selectbox("Choose a file to view or download:", local_pdfs, format_func=lambda x: os.path.basename(x))
-                with open(selected_pdf, "rb") as f:
-                    st.download_button(
-                        label="📥 Download File",
-                        data=f,
-                        file_name=os.path.basename(selected_pdf),
-                        mime="application/pdf"
-                    )
-            track("viewed_pdf", selected_code)
-            st.markdown("---")
-            display_pdf(selected_pdf)
-        else:
-            st.warning(f"📌 **{selected_code}** কোর্সের জন্য বর্তমানে কোনো স্থানীয় PDF ফাইল পাওয়া যায়নি।")
+        col_dl, col_save = st.columns([1, 1])
+        with col_dl:
+            st.download_button(
+                label=f"⬇️ Download {pdf_name}",
+                data=pdf_bytes,
+                file_name=pdf_name,
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+        with col_save:
+            save_offline_html = f"""
+            <button onclick="saveToIndexedDB()" style="
+                background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+                color: white; padding: 11px 20px; border: none; border-radius: 12px;
+                font-weight: 700; font-size: 0.9rem; cursor: pointer; width: 100%;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            ">
+                💾 Save for Offline Reading
+            </button>
+            <p id="save-status" style="margin-top: 6px; font-weight: 600; color: #10B981; text-align: center; font-size: 0.85rem;"></p>
 
-    elif tab_selection == "💬 AI Q&A":
-        st.markdown("### 💬 Ask Anything About Your Course")
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+            <script>
+            function saveToIndexedDB() {{
+                let request = indexedDB.open("EduHubOfflineDB", 2);
+                request.onupgradeneeded = function(e) {{
+                    let db = e.target.result;
+                    if (!db.objectStoreNames.contains("pdf_store")) {{
+                        db.createObjectStore("pdf_store", {{ keyPath: "id" }});
+                    }}
+                }};
+                request.onsuccess = function(e) {{
+                    let db = e.target.result;
+                    let tx = db.transaction("pdf_store", "readwrite");
+                    let store = tx.objectStore("pdf_store");
+                    let pdfData = {{
+                        id: "{selected_code}_" + "{pdf_name}",
+                        course_code: "{selected_code}",
+                        course_title: "{selected_title}",
+                        file_name: "{pdf_name}",
+                        base64: "{base64_pdf}",
+                        saved_at: new Date().toLocaleDateString()
+                    }};
+                    store.put(pdfData);
+                    tx.oncomplete = function() {{
+                        document.getElementById("save-status").innerText = "✅ Saved to Browser Memory!";
+                    }};
+                }};
+            }}
+            </script>
+            """
+            components.html(save_offline_html, height=75)
 
-        if user_query := st.chat_input("Type your question here..."):
-            if vector_store:
-                prompt_with_bilingual = f"{user_query}\n\n[অর্ডার: উত্তরটি প্রথমে সহজ ইংরেজিতে (Easy English) দেবে এবং সাথে সাথেই তার বাংলা অনুবাদ (Bangla Translation) নিচে যুক্ত করবে।]"
-                st.session_state.messages.append({"role": "user", "content": user_query})
-                with st.chat_message("user"):
-                    st.markdown(user_query)
+        st.divider()
+        display_pdf(selected_pdf)
+    else:
+        st.warning("⚠️ এই কোর্সের জন্য কোনো স্থানীয় PDF ফাইল খুঁজে পাওয়া যায়নি।")
 
-                with st.chat_message("assistant"):
-                    placeholder = st.empty()
-                    placeholder.markdown(skeleton_html("Generating smart response"), unsafe_allow_html=True)
-                    docs = vector_store.similarity_search(user_query)
-                    res = ask_gemini(llm, docs, prompt_with_bilingual)
-                    placeholder.markdown(res)
-                    st.session_state.messages.append({"role": "assistant", "content": res})
-                    track("asked_question", selected_code)
-            else:
-                st.error("⚠️ আগে ডকুমেন্ট আপলোড করুন বা ফোল্ডারে ফাইল রাখুন যাতে AI সার্চ করতে পারে।")
+# ==========================================================
+# TAB 2: 📲 OFFLINE SAVED PDFS (BROWSER INDEXEDDB VIEWER)
+# ==========================================================
+elif tab_selection == "📲 Offline Saved PDFs":
+    st.subheader("📲 Course-Wise Offline PDF Manager")
+    st.caption("🌐 নেট কানেকশন না থাকলেও পূর্বে সেভ করা PDF কোর্স অনুযায়ী বেছে পড়তে পারবেন।")
 
-    elif tab_selection == "📝 Smart Summary":
-        st.markdown("### 📝 Auto-Generated Course Summary")
-        if st.button("✨ Generate Smart Summary", key="sum_btn"):
+    courses_js_array = str(list(COURSES.keys()))
+
+    offline_manager_html = f"""
+    <div style="background: #ffffff; padding: 20px; border-radius: 16px; border: 1px solid #E7E9F3;">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+            <label style="font-weight: 700; color: #10121C;">📂 Select Course:</label>
+            <select id="courseFilter" onchange="loadOfflinePDFs()" style="
+                padding: 10px 16px; border-radius: 10px; border: 1px solid #6D5DFC;
+                font-weight: 600; background: #F6F7FB; outline: none; cursor: pointer;
+            ">
+                <option value="ALL">-- ALL SAVED COURSES --</option>
+            </select>
+            <button onclick="loadOfflinePDFs()" style="
+                background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%);
+                color: white; padding: 10px 18px; border: none; border-radius: 10px;
+                font-weight: 700; cursor: pointer;
+            ">
+                🔄 Refresh List
+            </button>
+            <button onclick="clearAllOfflineData()" style="
+                background: #EF4444; color: white; padding: 10px 18px; border: none;
+                border-radius: 10px; font-weight: 700; cursor: pointer; margin-left: auto;
+            ">
+                🗑️ Clear All Saved PDFs
+            </button>
+        </div>
+
+        <div id="status-msg" style="font-weight: 600; margin-bottom: 15px; color: #6D5DFC;"></div>
+        <div id="pdf-display-area"></div>
+    </div>
+
+    <script>
+    const courseList = {courses_js_array};
+    
+    function populateDropdown() {{
+        let select = document.getElementById("courseFilter");
+        courseList.forEach(code => {{
+            let opt = document.createElement("option");
+            opt.value = code;
+            opt.innerText = code;
+            select.appendChild(opt);
+        }});
+        // Set default to current course if available
+        let currentCode = "{selected_code}";
+        if(courseList.includes(currentCode)) {{
+            select.value = currentCode;
+        }}
+    }}
+
+    function loadOfflinePDFs() {{
+        let selectedCourse = document.getElementById("courseFilter").value;
+        let container = document.getElementById("pdf-display-area");
+        let statusDiv = document.getElementById("status-msg");
+        container.innerHTML = "";
+        statusDiv.innerText = "⏳ Reading offline database...";
+
+        let request = indexedDB.open("EduHubOfflineDB", 2);
+        request.onsuccess = function(e) {{
+            let db = e.target.result;
+            if (!db.objectStoreNames.contains("pdf_store")) {{
+                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
+                return;
+            }}
+            let tx = db.transaction("pdf_store", "readonly");
+            let store = tx.objectStore("pdf_store");
+            let req = store.getAll();
+            
+            req.onsuccess = function() {{
+                let allFiles = req.result;
+                let filtered = (selectedCourse === "ALL") 
+                    ? allFiles 
+                    : allFiles.filter(item => item.course_code === selectedCourse);
+
+                if (filtered.length === 0) {{
+                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
+                }} else {{
+                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
+                    filtered.forEach(item => {{
+                        let card = document.createElement("div");
+                        card.style.cssText = "background: #F9FAFB; border: 1px solid #E7E9F3; border-radius: 12px; padding: 16px; margin-bottom: 20px;";
+                        
+                        let header = document.createElement("div");
+                        header.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;";
+                        header.innerHTML = "<div><h4 style='margin:0; color:#10121C;'>📄 " + item.file_name + "</h4><small style='color:#6B7186;'>Course: " + item.course_code + " | Saved on: " + (item.saved_at || 'N/A') + "</small></div>";
+                        
+                        let delBtn = document.createElement("button");
+                        delBtn.innerText = "🗑️ Delete";
+                        delBtn.style.cssText = "background:#EF4444; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:600; cursor:pointer;";
+                        delBtn.onclick = function() {{ deleteOfflinePDF(item.id); }};
+                        
+                        header.appendChild(delBtn);
+                        card.appendChild(header);
+
+                        let iframe = document.createElement("iframe");
+                        iframe.src = "data:application/pdf;base64," + item.base64;
+                        iframe.style.cssText = "width: 100%; height: 600px; border: 1px solid #CBD5E1; border-radius: 8px;";
+                        
+                        card.appendChild(iframe);
+                        container.appendChild(card);
+                    }});
+                }}
+            }};
+        }};
+    }}
+
+    function deleteOfflinePDF(id) {{
+        let request = indexedDB.open("EduHubOfflineDB", 2);
+        request.onsuccess = function(e) {{
+            let db = e.target.result;
+            let tx = db.transaction("pdf_store", "readwrite");
+            let store = tx.objectStore("pdf_store");
+            store.delete(id);
+            tx.oncomplete = function() {{
+                loadOfflinePDFs();
+            }};
+        }};
+    }}
+
+    function clearAllOfflineData() {{
+        if(confirm("আপনি কি অফলাইনে সেভ করা সকল PDF মুছে ফেলতে চান?")) {{
+            let request = indexedDB.open("EduHubOfflineDB", 2);
+            request.onsuccess = function(e) {{
+                let db = e.target.result;
+                let tx = db.transaction("pdf_store", "readwrite");
+                let store = tx.objectStore("pdf_store");
+                store.clear();
+                tx.oncomplete = function() {{
+                    loadOfflinePDFs();
+                }};
+            }};
+        }}
+    }}
+
+    populateDropdown();
+    setTimeout(loadOfflinePDFs, 300);
+    </script>
+    """
+    components.html(offline_manager_html, height=750, scrolling=True)
+
+# ==========================================================
+# TAB 3: 💬 AI Q&A
+# ==========================================================
+elif tab_selection == "💬 AI Q&A":
+    col_title, col_clear = st.columns([4, 1])
+    with col_title:
+        st.subheader(f"💬 AI Study Assistant - {selected_code}")
+    with col_clear:
+        if st.button("🧹 Clear Chat"):
+            st.session_state.messages = []
+            st.rerun()
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    if user_query := st.chat_input("Ask any question from course materials..."):
+        st.session_state.messages.append({"role": "user", "content": user_query})
+        with st.chat_message("user"):
+            st.markdown(user_query)
+
+        with st.chat_message("assistant"):
             if vector_store:
                 placeholder = st.empty()
-                placeholder.markdown(skeleton_html("Analyzing and summarizing"), unsafe_allow_html=True)
-                docs = vector_store.similarity_search("Summary overview main points")
-                summary_res = ask_gemini(llm, docs, "মূল বিষয়বস্তু পয়েন্ট আকারে সহজ ইংরেজিতে (Easy English) লেখো এবং প্রতিটি পয়েন্টের নিচে বাংলা অনুবাদ (Bangla Translation) সাজিয়ে দাও।")
-                placeholder.markdown(summary_res)
-                track("generated_summary", selected_code)
+                placeholder.markdown(skeleton_html("Analyzing Documents"), unsafe_allow_html=True)
+                
+                docs = vector_store.similarity_search(user_query, k=4)
+                answer = ask_gemini(llm, docs, user_query)
+                
+                placeholder.markdown(answer)
+                st.session_state.messages.append({"role": "assistant", "content": answer})
+                track("Ask Question", selected_code)
             else:
-                st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
+                st.error("⚠️ পর্যাপ্ত ফাইল টেক্সট নেই। অনুগ্রহ করে ফাইল আপলোড বা সিলেক্ট করুন।")
 
-    elif tab_selection == "🎯 Exam Quiz":
-        st.markdown("### 🎯 Exam Preparation Quiz")
-        if st.button("📝 Generate Practice Questions", key="quiz_btn"):
-            if vector_store:
-                placeholder = st.empty()
-                placeholder.markdown(skeleton_html("Creating exam questions"), unsafe_allow_html=True)
-                docs = vector_store.similarity_search("Important concepts exam questions")
-                quiz_res = ask_gemini(llm, docs, "পরীক্ষার জন্য ৫টি গুরুত্বপূর্ণ প্রশ্ন ও উত্তর সহজ ইংরেজিতে (Easy English) তৈরি করো এবং বাংলা অনুবাদ যুক্ত করো।")
-                placeholder.markdown(quiz_res)
-                track("generated_quiz", selected_code)
-            else:
-                st.warning("⚠️ পর্যাপ্ত ডকুমেন্ট ডেটা নেই।")
-
-    elif tab_selection == "📈 My Progress":
-        st.markdown("### 📈 Your Study Progress")
-        sid = st.session_state.get("student_id")
-
-        if not sid:
-            st.info("👤 বাম পাশের সাইডবারে তোমার **নাম ও রোল নম্বর** দাও — তাহলেই তোমার পড়াশোনার progress ট্র্যাক হওয়া শুরু হবে।")
+# ==========================================================
+# TAB 4: 📝 SMART SUMMARY
+# ==========================================================
+elif tab_selection == "📝 Smart Summary":
+    st.subheader(f"📝 Auto Notes & Summary Generator - {selected_code}")
+    
+    if st.button("✨ Generate Smart Academic Notes", use_container_width=True):
+        if raw_text.strip():
+            placeholder = st.empty()
+            placeholder.markdown(skeleton_html("Summarizing Course Topics"), unsafe_allow_html=True)
+            
+            prompt = (
+                f"Create concise, well-structured academic study notes from the text below.\n"
+                f"Include key definitions, main topics, and bullet points in Bengali:\n\n{raw_text[:12000]}"
+            )
+            try:
+                summary_res = llm.invoke(prompt)
+                content = summary_res.content if hasattr(summary_res, 'content') else str(summary_res)
+                placeholder.markdown(content)
+                track("Generated Summary", selected_code)
+            except Exception as e:
+                placeholder.error(f"Failed to generate summary: {e}")
         else:
-            streak = get_study_streak(sid)
-            total_activities = get_total_activities(sid)
-            course_progress = get_course_progress(sid)
-            courses_touched = len(course_progress)
+            st.warning("⚠️ নোট তৈরি করতে ফাইল টেক্সট প্রয়োজন।")
 
-            pcol1, pcol2, pcol3 = st.columns(3)
-            with pcol1:
-                st.markdown(f"""
-                    <div class="metric-card">
-                        <div class="metric-card-val">🔥 {streak}</div>
-                        <div class="metric-card-lbl">Day Study Streak</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            with pcol2:
-                st.markdown(f"""
-                    <div class="metric-card">
-                        <div class="metric-card-val">{total_activities}</div>
-                        <div class="metric-card-lbl">Total Activities</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            with pcol3:
-                st.markdown(f"""
-                    <div class="metric-card">
-                        <div class="metric-card-val">{courses_touched}</div>
-                        <div class="metric-card-lbl">Courses Explored</div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("#### 📚 Course-wise Engagement")
-
-            if course_progress:
-                for code, count in sorted(course_progress.items(), key=lambda x: -x[1]):
-                    title = COURSES.get(code, code)
-                    pct = min(count / 12, 1.0)
-                    st.markdown(f"**{code} — {title}**")
-                    st.progress(pct, text=f"{count} activities logged")
-            else:
-                st.info("এখনো কোনো activity রেকর্ড হয়নি। কোনো course-এর PDF দেখো, প্রশ্ন করো, বা quiz/summary বানাও — progress এখানে দেখা যাবে!")
-
-
-        st.markdown("### 📊 Department of Environmental Science and Engineering")
-        st.markdown("#### Jatiya Kabi Kazi Nazrul Islam University")
-        st.markdown("**Marks of Internal Evaluation (Session: 2024-2025)**")
-
-        courses = [
-            "ESE 2101: Hydrology and Hydrogeology",
-            "ESE 2103: Oceanography and Limnology",
-            "ESE 2105: Ecology",
-            "ESE 2102: Ecology - Lab",
-            "ESE 2107: Environmental Microbiology",
-            "ESE 2104: Environmental Microbiology - Lab",
-            "ESE 2109: Survey and Settlement",
-            "ESE 2106: Survey and Settlement - Lab",
-            "ESE 2111: Soil Mechanics",
-            "ESE 2108: Engineering Drawing Lab",
-            "ESE 2113: Statistics for Environment",
-            "PYQ: Previous Year Questions",
-            "MEQ: Mid Exam Questions"
-        ]
-
-        selected_course = st.selectbox("📚 কোর্স সিলেক্ট করুন:", courses, key="internal_course_select")
-
-        if selected_course.startswith("ESE 2101"):
-            data = {
-                "Roll": [
-                    "25103402", "25103405", "25103406", "25103409", "25103413", "25103413",
-                    "25103414", "25103415", "25103416", "25103417", "25103420", "25103421",
-                    "25103422", "25103423", "25103427", "25103429", "25103430", "25103431",
-                    "25103433", "25103434", "25103435", "25103436", "25103437", "25103438",
-                    "25103440", "24103403", "24103423"
-                ],
-                "Name of Students": [
-                    "FARJANA AKTER MITU", "MOHSINA KHAN", "NOSHIN", "AMIR HAMZA RATUL", "NAZIFA SULTANA", "ELMA",
-                    "MD. SAIDUR RAHMAN SAID", "MST. FARHANA ISLAM BORSHA", "MD. KAWSER MAHMUD", "SADIA AFRIN PROMI", "JUNAID HASSAN PROVAT", "SIRAZUM MONIRA",
-                    "SHAD EVENY AHMED SHOWRAV", "MD. MAHADI HASAN", "MURSALIN AL IFTI", "RADUYAN HOSEN", "SANIA AKTER", "HRIDOY MIA",
-                    "MD. ABU SAIM", "MD. YOUSUF ALI", "MUTAHARA SALSABIL LABIBA", "MAHDI HASAN MARUF", "MST. RATNA AKTER", "MST. KHADILA AKTER",
-                    "BORSHA AKTER", "UMME SALMA SADIA", "FARIHA TASNUBA"
-                ],
-                "Attendance (10)": [10, 7, 9, 9, 10, 9, 10, 10, 10, 10, 9, 9, 9, 9, 8, 10, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-                "Mid-1 (10)": [10, 8, 10, 10, 10, 9, 9, 10, 8, 8, 10, 10, 9, 10, 10, 10, 10, 8, 10, 10, 10, 9, 9, 10, 10, 10, 10],
-                "Mid-2 (10)": [8, 8, 9, 9, 9, 9, 10, 10, 9, 9, 9, 10, 10, 9, 7, 9, 7, 10, 10, 10, 10, 8, 10, 9, 9, 7, 10],
-                "Mid-3 (10)": [9, 9, 6, 6, 7, 6, 8, 6, 6, 7, 6, 7, 7, 8, 5, 9, 10, 8, 6, 8, 10, 6, 8, 9, 10, 10, 7],
-                "Total Marks (40)": [37, 32, 34, 34, 36, 33, 37, 36, 33, 34, 34, 36, 35, 36, 30, 38, 36, 35, 36, 38, 40, 33, 37, 38, 39, 37, 37]
-            }
-            df_internal = pd.DataFrame(data)
-            df_internal = df_internal.sort_values(by="Total Marks (40)", ascending=False).reset_index(drop=True)
-            df_internal.insert(0, "Rank", [f"#{i}" for i in range(1, len(df_internal) + 1)])
-            st.dataframe(df_internal, use_container_width=True, hide_index=True)
+# ==========================================================
+# TAB 5: 🎯 EXAM QUIZ
+# ==========================================================
+elif tab_selection == "🎯 Exam Quiz":
+    st.subheader(f"🎯 Interactive Exam Quiz - {selected_code}")
+    
+    if st.button("🎲 Generate Practice Quiz", use_container_width=True):
+        if raw_text.strip():
+            placeholder = st.empty()
+            placeholder.markdown(skeleton_html("Creating Quiz Questions"), unsafe_allow_html=True)
+            
+            prompt = (
+                f"Generate 5 Multiple Choice Questions (MCQs) with options and 3 Short Answer Questions "
+                f"based on the text below. Language: Bengali.\n\n{raw_text[:10000]}"
+            )
+            try:
+                quiz_res = llm.invoke(prompt)
+                content = quiz_res.content if hasattr(quiz_res, 'content') else str(quiz_res)
+                placeholder.empty()
+                
+                with st.expander("📝 View Practice Questions & Solutions", expanded=True):
+                    st.markdown(content)
+                track("Generated Quiz", selected_code)
+            except Exception as e:
+                placeholder.error(f"Quiz generation error: {e}")
         else:
-            st.info(f"📌 **{selected_course}** কোর্সের ইন্টারনাল মার্কশিট শিঘ্রই যুক্ত করা হবে।")
+            st.warning("⚠️ কুইজ তৈরি করতে ডকুমেন্ট টেক্সট পাওয়া যায়নি।")
+
+# ==========================================================
+# TAB 6: 📈 MY PROGRESS
+# ==========================================================
+elif tab_selection == "📈 My Progress":
+    st.subheader("📈 Personal Activity & Progress Tracker")
+    sid = st.session_state.get("student_id")
+    
+    if sid:
+        streak = get_study_streak(sid)
+        total_act = get_total_activities(sid)
+        progress = get_course_progress(sid)
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f'<div class="metric-card"><div class="metric-card-val">🔥 {streak} Days</div><div class="metric-card-lbl">Study Streak</div></div>', unsafe_allow_html=True)
+        with c2:
+            st.markdown(f'<div class="metric-card"><div class="metric-card-val">⚡ {total_act}</div><div class="metric-card-lbl">Total Actions</div></div>', unsafe_allow_html=True)
+            
+        st.markdown("<br>### 📊 Course Activity Distribution", unsafe_allow_html=True)
+        if progress:
+            df = pd.DataFrame(list(progress.items()), columns=["Course Code", "Total Activities"])
+            st.dataframe(df, use_container_width=True)
+        else:
+            st.info("এখনো কোন এক্টিভিটি রেকর্ড হয়নি। পড়ালেখা ও চ্যাট শুরু করলে ডাটা আপডেট হবে।")
+    else:
+        st.info("👉 আপনার প্রতিদিনের অগ্রগতি সেভ করতে সাইডবারে রোল নম্বর যোগ করুন।")
+
+# ==========================================================
+# TAB 7: 📊 LEADERBOARD
+# ==========================================================
+elif tab_selection == "📊 Leaderboard":
+    st.subheader("📊 Top Active Student Leaderboard")
+    board_data = get_leaderboard()
+    
+    if board_data:
+        df_lb = pd.DataFrame(board_data, columns=["Student Name", "Roll Number", "Activities", "Last Active"])
+        st.dataframe(df_lb, use_container_width=True)
+    else:
+        st.info("লিডারবোর্ডে এখনো ডাটা যুক্ত হয়নি। সাইডবারে নাম ও রোল দিয়ে কুইজ বা চ্যাট শুরু করুন!")
