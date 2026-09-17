@@ -21,7 +21,7 @@ import streamlit.components.v1 as components
 # 1. PAGE CONFIGURATION & SETUP
 # ==========================================================
 st.set_page_config(
-    page_title="EduHub - Academic AI Assistant",
+    page_title="EduHub - Academic AI Workspace",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -52,7 +52,7 @@ components.html("""
     top: 0; left: 0; width: 100%;
     background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
     color: white; text-align: center;
-    padding: 10px; font-weight: 700; font-family: sans-serif;
+    padding: 10px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif;
     z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     font-size: 0.9rem;
 ">
@@ -228,88 +228,231 @@ def build_vector_store(course_code, text_hash, raw_text):
     return FAISS.from_texts(chunks, embedding=embeddings)
 
 # ==========================================================
-# 4. CUSTOM STYLING
+# 4. ADVANCED MODERN SAAS STYLING (UI ENHANCEMENTS)
 # ==========================================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
 
     :root {
-        --violet: #6D5DFC; --violet-deep: #4C3FD7;
-        --surface: #FFFFFF; --border: #E7E9F3; --text-muted: #6B7186;
-        --radius-xl: 22px; --radius-lg: 16px; --radius-md: 12px;
-        --shadow-glow: 0 10px 30px -10px rgba(109, 93, 252, 0.35);
+        --primary: #6366F1;
+        --primary-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+        --accent-glow: rgba(99, 102, 241, 0.25);
+        --bg-main: #F8FAFC;
+        --surface: #FFFFFF;
+        --border-color: #E2E8F0;
+        --text-dark: #0F172A;
+        --text-muted: #64748B;
+        --radius-lg: 20px;
+        --radius-md: 14px;
+        --shadow-soft: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
     }
 
-    html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
-    h1, h2, h3 { font-family: 'Space Grotesk', sans-serif !important; }
+    html, body, [class*="css"] { 
+        font-family: 'Plus Jakarta Sans', sans-serif; 
+    }
+    h1, h2, h3, h4 { 
+        font-family: 'Outfit', sans-serif !important; 
+        letter-spacing: -0.02em;
+    }
 
-    .stApp { background: #FAFBFF; }
-    .block-container { padding-top: 1.8rem !important; max-width: 1180px; }
+    .stApp { background: var(--bg-main); }
+    .block-container { padding-top: 1.5rem !important; max-width: 1240px; }
 
     #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
     header[data-testid="stHeader"] { background: transparent !important; }
 
+    /* Modern Hero Header Banner */
     .header-box {
-        background: linear-gradient(155deg, #05070F 0%, #0B0F1E 50%, #131A2E 100%);
-        padding: 30px 24px; border-radius: var(--radius-xl); text-align: center; color: white;
-        margin-bottom: 20px; box-shadow: var(--shadow-glow); border: 1px solid rgba(255, 255, 255, 0.08);
+        background: linear-gradient(135deg, #090D16 0%, #111827 50%, #1E1B4B 100%);
+        padding: 36px 28px 28px 28px;
+        border-radius: var(--radius-lg);
+        text-align: center;
+        color: white;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
-    .header-box h2 { color: #FFFFFF !important; font-size: 1.75rem; margin: 0 0 10px 0; }
+    .header-box::before {
+        content: '';
+        position: absolute;
+        top: -50%; left: 50%;
+        transform: translateX(-50%);
+        width: 80%; height: 100%;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+        pointer-events: none;
+    }
     
     .uni-logo-corner {
-        display: block; margin: 0 auto 12px auto; width: 72px; height: 72px; border-radius: 16px;
-        background: rgba(255,255,255,0.95); padding: 5px; box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        display: block; 
+        margin: 0 auto 16px auto; 
+        width: 76px; height: 76px; 
+        border-radius: 20px;
+        background: #FFFFFF; 
+        padding: 6px; 
+        box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.2);
         object-fit: contain;
+        transition: transform 0.3s ease;
+    }
+    .uni-logo-corner:hover { transform: scale(1.05) rotate(2deg); }
+
+    .header-box h2 { 
+        color: #FFFFFF !important; 
+        font-size: 1.85rem; 
+        font-weight: 700;
+        margin: 0 0 12px 0; 
     }
 
     .badge {
-        background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); color: #E4E7FF !important;
-        font-weight: 600; font-size: 0.8rem; padding: 6px 18px; border-radius: 30px;
-        border: 1px solid rgba(255,255,255,0.15); display: inline-block;
+        background: rgba(255, 255, 255, 0.08); 
+        backdrop-filter: blur(12px); 
+        color: #C7D2FE !important;
+        font-weight: 600; 
+        font-size: 0.82rem; 
+        padding: 6px 20px; 
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.15); 
+        display: inline-block;
+        letter-spacing: 0.03em;
     }
 
+    /* Course Card Banner */
     .course-card {
-        background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%);
-        padding: 18px 24px; border-radius: var(--radius-lg); color: white; margin-bottom: 20px;
-        box-shadow: var(--shadow-glow);
+        background: var(--primary-gradient);
+        padding: 20px 28px; 
+        border-radius: var(--radius-md); 
+        color: white; 
+        margin-bottom: 24px;
+        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
-    .course-card h1 { color: #FFFFFF !important; font-size: 1.45rem; margin: 0; }
+    .course-card h1 { 
+        color: #FFFFFF !important; 
+        font-size: 1.45rem; 
+        margin: 0; 
+        font-weight: 700;
+    }
 
+    /* Stat/Metric Cards */
     .metric-card {
-        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
-        padding: 16px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        background: var(--surface); 
+        border: 1px solid var(--border-color); 
+        border-radius: var(--radius-md);
+        padding: 20px; 
+        text-align: center; 
+        box-shadow: var(--shadow-soft);
+        transition: all 0.25s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-4px);
+        border-color: #C7D2FE;
+        box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.15);
     }
     .metric-card-val {
-        font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700;
-        color: #6D5DFC; margin-bottom: 2px;
+        font-family: 'Outfit', sans-serif; 
+        font-size: 2.2rem; 
+        font-weight: 800;
+        color: #4F46E5; 
+        margin-bottom: 2px;
+        line-height: 1;
     }
-    .metric-card-lbl { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .metric-card-lbl { 
+        font-size: 0.78rem; 
+        font-weight: 700; 
+        color: var(--text-muted); 
+        text-transform: uppercase; 
+        letter-spacing: 0.05em;
+    }
 
-    div[data-testid="stRadio"] > div {
-        display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important;
-        overflow-x: auto !important; gap: 8px !important; padding: 4px 2px 14px 2px !important;
+    /* Navigation Radio Tabs Styling (Segmented Controls) */
+    div[data-testid="stRadio"] {
+        background: #F1F5F9;
+        padding: 6px;
+        border-radius: 18px;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 20px;
     }
+    div[data-testid="stRadio"] > div {
+        display: flex !important; 
+        flex-direction: row !important; 
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important; 
+        gap: 6px !important; 
+        padding: 2px !important;
+        scrollbar-width: none;
+    }
+    div[data-testid="stRadio"] > div::-webkit-scrollbar { display: none; }
     div[data-testid="stRadio"] input[type="radio"] { display: none !important; }
     div[data-testid="stRadio"] label {
-        background-color: var(--surface) !important; border: 1px solid var(--border) !important;
-        border-radius: 25px !important; padding: 8px 18px !important; color: #454A5E !important;
-        font-weight: 600 !important; font-size: 0.85rem !important; cursor: pointer !important;
-        white-space: nowrap !important; transition: all 0.2s ease;
+        background-color: transparent !important; 
+        border: none !important;
+        border-radius: 12px !important; 
+        padding: 10px 20px !important; 
+        color: #475569 !important;
+        font-weight: 600 !important; 
+        font-size: 0.88rem !important; 
+        cursor: pointer !important;
+        white-space: nowrap !important; 
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        margin: 0 !important;
+    }
+    div[data-testid="stRadio"] label:hover {
+        color: #0F172A !important;
+        background: rgba(255,255,255,0.6) !important;
     }
     div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {
-        background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%) !important; color: #FFFFFF !important;
+        background: #FFFFFF !important; 
+        color: #4F46E5 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
     }
-    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p { color: #FFFFFF !important; font-weight: 700 !important; }
+    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p { 
+        color: #4F46E5 !important; 
+        font-weight: 700 !important; 
+    }
 
+    /* Sidebar Refinement */
+    section[data-testid="stSidebar"] {
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #E2E8F0 !important;
+    }
+    
+    /* Sleek Input Fields */
+    .stTextInput input, .stSelectbox select {
+        border-radius: 10px !important;
+        border: 1px solid #E2E8F0 !important;
+        padding: 10px 14px !important;
+        transition: all 0.2s ease !important;
+    }
+    .stTextInput input:focus {
+        border-color: #6366F1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+    }
+
+    /* Primary Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%) !important; color: white !important;
-        border-radius: 12px !important; padding: 10px 20px !important; font-weight: 700 !important; border: none !important;
+        background: var(--primary-gradient) !important; 
+        color: white !important;
+        border-radius: 12px !important; 
+        padding: 10px 24px !important; 
+        font-weight: 700 !important; 
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25) !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton > button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35) !important;
     }
 
-    .skeleton-wrap { padding: 16px; background: #FFF; border-radius: 12px; border: 1px solid #E7E9F3; margin: 10px 0; }
-    .skeleton-badge { font-weight: 600; color: #6D5DFC; margin-bottom: 12px; font-size: 0.85rem; }
-    .skeleton-line { height: 12px; background: #E7E9F3; margin-bottom: 8px; border-radius: 6px; }
+    /* Skeleton Loader */
+    .skeleton-wrap { padding: 20px; background: #FFF; border-radius: 14px; border: 1px solid #E2E8F0; margin: 12px 0; }
+    .skeleton-badge { font-weight: 700; color: #4F46E5; margin-bottom: 14px; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+    .skeleton-line { height: 12px; background: #F1F5F9; margin-bottom: 10px; border-radius: 6px; animation: pulse 1.5s infinite ease-in-out; }
+    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -335,8 +478,8 @@ else:
 st.markdown(f"""
     <div class="header-box">
         {_logo_html}
-        <h2>🌱 Department of Environmental Science and Engineering</h2>
-        <span class="badge">📚 Academic Resource & Smart AI Workspace</span>
+        <h2>Department of Environmental Science and Engineering</h2>
+        <span class="badge">✨ Academic Resource & Smart AI Workspace</span>
     </div>
 """, unsafe_allow_html=True)
 
@@ -361,7 +504,7 @@ COURSES = {
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
-    st.markdown("<h3 style='text-align: center;'>Workspace Navigation</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size: 1.15rem; font-weight: 700; color: #0F172A; margin-bottom: 12px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
     
     search_query = st.text_input("🔍 Search Courses", placeholder="e.g. hydrology", key="global_search_input")
     if search_query.strip():
@@ -378,7 +521,7 @@ with st.sidebar:
     selected_title = COURSES[selected_code]
 
     st.divider()
-    st.markdown("👤 **YOUR PROFILE**", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 0.8rem; font-weight: 800; color: #64748B; letter-spacing: 0.05em;'>YOUR PROFILE</p>", unsafe_allow_html=True)
     student_name_input = st.text_input("Your Name", placeholder="e.g. Amir Hamja Ratul", key="student_name_field")
     student_roll_input = st.text_input("Roll Number", placeholder="e.g. 25103402", key="student_roll_field")
     
@@ -395,7 +538,10 @@ with st.sidebar:
 
 st.markdown(f"""
     <div class="course-card">
-        <h1>🎓 {selected_code}: {selected_title}</h1>
+        <div>
+            <span style="font-size: 0.8rem; text-transform: uppercase; opacity: 0.85; font-weight: 700; letter-spacing: 0.05em;">Active Course Material</span>
+            <h1>🎓 {selected_code}: {selected_title}</h1>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -430,9 +576,9 @@ if local_pdfs:
 if raw_text.strip():
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown(f'<div class="metric-card"><div class="metric-card-val">{files_count}</div><div class="metric-card-lbl">📂 Documents</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><div class="metric-card-val">{files_count}</div><div class="metric-card-lbl">📁 Documents Loaded</div></div>', unsafe_allow_html=True)
     with col2:
-        st.markdown(f'<div class="metric-card"><div class="metric-card-val">{total_pages}</div><div class="metric-card-lbl">📄 Total Pages</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><div class="metric-card-val">{total_pages}</div><div class="metric-card-lbl">📄 Total Pages Indexed</div></div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
 tab_selection = st.radio(
@@ -480,7 +626,7 @@ if tab_selection == "📖 View & Download":
                 background: linear-gradient(135deg, #10B981 0%, #059669 100%);
                 color: white; padding: 11px 20px; border: none; border-radius: 12px;
                 font-weight: 700; font-size: 0.9rem; cursor: pointer; width: 100%;
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); font-family: 'Plus Jakarta Sans', sans-serif;
             ">
                 💾 Save for Offline Reading
             </button>
@@ -523,7 +669,7 @@ if tab_selection == "📖 View & Download":
         st.warning("⚠️ এই কোর্সের জন্য কোনো স্থানীয় PDF ফাইল খুঁজে পাওয়া যায়নি।")
 
 # ==========================================================
-# TAB 2: 📲 OFFLINE SAVED PDFS (BROWSER INDEXEDDB VIEWER)
+# TAB 2: 📲 OFFLINE SAVED PDFS
 # ==========================================================
 elif tab_selection == "📲 Offline Saved PDFs":
     st.subheader("📲 Course-Wise Offline PDF Manager")
@@ -532,31 +678,31 @@ elif tab_selection == "📲 Offline Saved PDFs":
     courses_js_array = str(list(COURSES.keys()))
 
     offline_manager_html = f"""
-    <div style="background: #ffffff; padding: 20px; border-radius: 16px; border: 1px solid #E7E9F3;">
+    <div style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
         <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-            <label style="font-weight: 700; color: #10121C;">📂 Select Course:</label>
+            <label style="font-weight: 700; color: #0F172A; font-family: sans-serif;">📂 Select Course:</label>
             <select id="courseFilter" onchange="loadOfflinePDFs()" style="
-                padding: 10px 16px; border-radius: 10px; border: 1px solid #6D5DFC;
-                font-weight: 600; background: #F6F7FB; outline: none; cursor: pointer;
+                padding: 10px 16px; border-radius: 10px; border: 1px solid #6366F1;
+                font-weight: 600; background: #F8FAFC; outline: none; cursor: pointer; font-family: sans-serif;
             ">
                 <option value="ALL">-- ALL SAVED COURSES --</option>
             </select>
             <button onclick="loadOfflinePDFs()" style="
-                background: linear-gradient(135deg, #6D5DFC 0%, #4C3FD7 100%);
+                background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
                 color: white; padding: 10px 18px; border: none; border-radius: 10px;
-                font-weight: 700; cursor: pointer;
+                font-weight: 700; cursor: pointer; font-family: sans-serif;
             ">
                 🔄 Refresh List
             </button>
             <button onclick="clearAllOfflineData()" style="
                 background: #EF4444; color: white; padding: 10px 18px; border: none;
-                border-radius: 10px; font-weight: 700; cursor: pointer; margin-left: auto;
+                border-radius: 10px; font-weight: 700; cursor: pointer; margin-left: auto; font-family: sans-serif;
             ">
                 🗑️ Clear All Saved PDFs
             </button>
         </div>
 
-        <div id="status-msg" style="font-weight: 600; margin-bottom: 15px; color: #6D5DFC;"></div>
+        <div id="status-msg" style="font-weight: 600; margin-bottom: 15px; color: #4F46E5; font-family: sans-serif;"></div>
         <div id="pdf-display-area"></div>
     </div>
 
@@ -607,15 +753,15 @@ elif tab_selection == "📲 Offline Saved PDFs":
                     statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
                     filtered.forEach(item => {{
                         let card = document.createElement("div");
-                        card.style.cssText = "background: #F9FAFB; border: 1px solid #E7E9F3; border-radius: 12px; padding: 16px; margin-bottom: 20px;";
+                        card.style.cssText = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 20px;";
                         
                         let header = document.createElement("div");
                         header.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;";
-                        header.innerHTML = "<div><h4 style='margin:0; color:#10121C;'>📄 " + item.file_name + "</h4><small style='color:#6B7186;'>Course: " + item.course_code + " | Saved on: " + (item.saved_at || 'N/A') + "</small></div>";
+                        header.innerHTML = "<div><h4 style='margin:0; color:#0F172A; font-family:sans-serif;'>📄 " + item.file_name + "</h4><small style='color:#64748B; font-family:sans-serif;'>Course: " + item.course_code + " | Saved on: " + (item.saved_at || 'N/A') + "</small></div>";
                         
                         let delBtn = document.createElement("button");
                         delBtn.innerText = "🗑️ Delete";
-                        delBtn.style.cssText = "background:#EF4444; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:600; cursor:pointer;";
+                        delBtn.style.cssText = "background:#EF4444; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:600; cursor:pointer; font-family:sans-serif;";
                         delBtn.onclick = function() {{ deleteOfflinePDF(item.id); }};
                         
                         header.appendChild(delBtn);
