@@ -228,7 +228,7 @@ def build_vector_store(course_code, text_hash, raw_text):
     return FAISS.from_texts(chunks, embedding=embeddings)
 
 # ==========================================================
-# 4. ADVANCED MODERN SAAS STYLING (UI ENHANCEMENTS)
+# 4. ADVANCED MODERN SAAS STYLING (DARK NAVY HEADER & ULTRA CLEAR LOGO)
 # ==========================================================
 st.markdown("""
 <style>
@@ -265,18 +265,18 @@ st.markdown("""
     #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
     header[data-testid="stHeader"] { background: transparent !important; }
 
-    /* Modern Banner with Adjusted Color Palette */
+    /* Modern Dark Navy Header Box */
     .header-box {
-        background: linear-gradient(135deg, #312E81 0%, #4338CA 50%, #6366F1 100%);
-        padding: 34px 28px;
+        background: linear-gradient(135deg, #020617 0%, #0F172A 50%, #1E293B 100%) !important;
+        padding: 36px 28px;
         border-radius: var(--radius-lg);
         text-align: center;
-        color: white;
+        color: #FFFFFF !important;
         margin-bottom: 24px;
         position: relative;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        box-shadow: 0 20px 40px -10px rgba(67, 56, 202, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 20px 40px -10px rgba(2, 6, 23, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     .header-box::before {
         content: '';
@@ -284,32 +284,34 @@ st.markdown("""
         top: -50%; left: 50%;
         transform: translateX(-50%);
         width: 80%; height: 100%;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
         pointer-events: none;
     }
     
-    /* High Clarity Crisp University Logo Container */
+    /* High Clarity Sharp University Logo Container */
     .uni-logo-corner {
         display: block; 
         margin: 0 auto 16px auto; 
-        width: 88px; 
-        height: 88px; 
+        width: 92px; 
+        height: 92px; 
         border-radius: 22px;
-        background: #FFFFFF; 
-        padding: 8px; 
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25), 0 0 0 3px rgba(255, 255, 255, 0.5);
+        background: #FFFFFF !important; 
+        padding: 6px; 
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.85);
         object-fit: contain;
         image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
         transition: transform 0.3s ease;
     }
     .uni-logo-corner:hover { transform: scale(1.05) rotate(2deg); }
 
     .header-box h2 { 
         color: #FFFFFF !important; 
-        font-size: 1.9rem; 
-        font-weight: 700;
+        font-size: 2rem !important; 
+        font-weight: 800 !important;
         margin: 0; 
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
     }
 
     /* GLASSMORPHISM SIDEBAR STYLING */
@@ -389,7 +391,7 @@ st.markdown("""
         letter-spacing: 0.05em;
     }
 
-    /* Navigation Radio Tabs Styling (Segmented Controls) */
+    /* Navigation Radio Tabs Styling */
     div[data-testid="stRadio"] {
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(10px);
