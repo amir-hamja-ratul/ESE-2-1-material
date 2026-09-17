@@ -265,18 +265,18 @@ st.markdown("""
     #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
     header[data-testid="stHeader"] { background: transparent !important; }
 
-    /* Modern Hero Header Banner */
+    /* Modern Banner with Adjusted Color Palette */
     .header-box {
-        background: linear-gradient(135deg, #090D16 0%, #111827 50%, #1E1B4B 100%);
-        padding: 32px 28px;
+        background: linear-gradient(135deg, #312E81 0%, #4338CA 50%, #6366F1 100%);
+        padding: 34px 28px;
         border-radius: var(--radius-lg);
         text-align: center;
         color: white;
         margin-bottom: 24px;
         position: relative;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        box-shadow: 0 20px 40px -10px rgba(67, 56, 202, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
     .header-box::before {
         content: '';
@@ -284,28 +284,32 @@ st.markdown("""
         top: -50%; left: 50%;
         transform: translateX(-50%);
         width: 80%; height: 100%;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
         pointer-events: none;
     }
     
+    /* High Clarity Crisp University Logo Container */
     .uni-logo-corner {
         display: block; 
-        margin: 0 auto 14px auto; 
-        width: 76px; height: 76px; 
-        border-radius: 20px;
+        margin: 0 auto 16px auto; 
+        width: 88px; 
+        height: 88px; 
+        border-radius: 22px;
         background: #FFFFFF; 
-        padding: 6px; 
-        box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.2);
+        padding: 8px; 
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25), 0 0 0 3px rgba(255, 255, 255, 0.5);
         object-fit: contain;
+        image-rendering: -webkit-optimize-contrast;
         transition: transform 0.3s ease;
     }
     .uni-logo-corner:hover { transform: scale(1.05) rotate(2deg); }
 
     .header-box h2 { 
         color: #FFFFFF !important; 
-        font-size: 1.85rem; 
+        font-size: 1.9rem; 
         font-weight: 700;
         margin: 0; 
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
     /* GLASSMORPHISM SIDEBAR STYLING */
