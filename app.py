@@ -44,44 +44,28 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ==========================================================
-# THEME STATE (Light / Dark) — persisted for the session
-# ==========================================================
-if "ui_theme" not in st.session_state:
-    st.session_state["ui_theme"] = "light"
-
-# ==========================================================
-# Global Network Connection Status Detector (upgraded)
-# ==========================================================
+# Global Network Connection Status Detector
 components.html("""
 <div id="net-status-banner" style="
     display: none;
     position: fixed;
     top: 0; left: 0; width: 100%;
-    background: linear-gradient(135deg, #F97316 0%, #DC2626 100%);
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
     color: white; text-align: center;
-    padding: 12px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif;
-    z-index: 999999; box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    padding: 10px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif;
+    z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     font-size: 0.9rem;
-    transform: translateY(-100%);
-    transition: transform 0.35s cubic-bezier(.4,0,.2,1);
-    display: flex; align-items: center; justify-content: center; gap: 8px;
 ">
-    <span style="display:inline-flex;width:8px;height:8px;border-radius:50%;background:#fff;animation:pulseDot 1.2s infinite;"></span>
-    অফলাইন মোড: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
+    📡 Offline Mode: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
 </div>
-<style>
-@keyframes pulseDot { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.4;transform:scale(1.4);} }
-</style>
+
 <script>
 function updateOnlineStatus() {
     var banner = document.getElementById("net-status-banner");
     if (!navigator.onLine) {
-        banner.style.display = "flex";
-        requestAnimationFrame(()=>{ banner.style.transform = "translateY(0)"; });
+        banner.style.display = "block";
     } else {
-        banner.style.transform = "translateY(-100%)";
-        setTimeout(()=>{ banner.style.display = "none"; }, 350);
+        banner.style.display = "none";
     }
 }
 window.addEventListener('online', updateOnlineStatus);
@@ -213,34 +197,6 @@ def skeleton_html(label="Processing"):
         </div>
     """
 
-def circular_progress_svg(value, max_value=30, label="Day Streak", emoji="🔥"):
-    """Render an animated circular progress ring as inline SVG."""
-    pct = min(value / max_value, 1.0) if max_value else 0
-    radius = 54
-    circumference = 2 * 3.14159265 * radius
-    offset = circumference * (1 - pct)
-    return f"""
-    <div style="display:flex;flex-direction:column;align-items:center;padding:18px;">
-        <svg width="140" height="140" viewBox="0 0 140 140" style="transform:rotate(-90deg);">
-            <circle cx="70" cy="70" r="{radius}" fill="none" stroke="rgba(99,102,241,0.12)" stroke-width="12"/>
-            <circle cx="70" cy="70" r="{radius}" fill="none" stroke="url(#streakGrad)" stroke-width="12"
-                stroke-linecap="round" stroke-dasharray="{circumference}" stroke-dashoffset="{offset}"
-                style="transition: stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);"/>
-            <defs>
-                <linearGradient id="streakGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#6366F1"/>
-                    <stop offset="100%" stop-color="#EC4899"/>
-                </linearGradient>
-            </defs>
-        </svg>
-        <div style="margin-top:-96px;text-align:center;">
-            <div style="font-size:1.9rem;">{emoji}</div>
-            <div style="font-family:'Outfit',sans-serif;font-size:1.7rem;font-weight:800;color:#4F46E5;">{value}</div>
-        </div>
-        <div style="margin-top:14px;font-size:0.8rem;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;">{label}</div>
-    </div>
-    """
-
 @st.cache_resource(show_spinner=False)
 def get_embeddings_model():
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
@@ -272,363 +228,230 @@ def build_vector_store(course_code, text_hash, raw_text):
     return FAISS.from_texts(chunks, embedding=embeddings)
 
 # ==========================================================
-# 4. PREMIUM UI SYSTEM — Light + Dark, Glassmorphism, Motion
+# 4. ADVANCED MODERN SAAS STYLING (FIXED ULTRA-SHARP LOGO)
 # ==========================================================
-_dark = st.session_state["ui_theme"] == "dark"
-
-_root_vars_light = """
-    --primary: #6366F1;
-    --primary-2: #8B5CF6;
-    --primary-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 55%, #EC4899 100%);
-    --accent-glow: rgba(99, 102, 241, 0.25);
-    --bg-app-1: #EEF2FF;
-    --bg-app-2: #F8FAFC;
-    --bg-app-3: #E0E7FF;
-    --surface: rgba(255, 255, 255, 0.78);
-    --surface-solid: #FFFFFF;
-    --border-color: rgba(226, 232, 240, 0.9);
-    --text-dark: #0F172A;
-    --text-muted: #64748B;
-    --sidebar-bg: rgba(255, 255, 255, 0.5);
-    --shadow-soft: 0 10px 25px -5px rgba(30, 41, 59, 0.08), 0 8px 10px -6px rgba(30, 41, 59, 0.03);
-"""
-
-_root_vars_dark = """
-    --primary: #818CF8;
-    --primary-2: #A78BFA;
-    --primary-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 55%, #EC4899 100%);
-    --accent-glow: rgba(129, 140, 248, 0.28);
-    --bg-app-1: #0B1220;
-    --bg-app-2: #0F172A;
-    --bg-app-3: #131C31;
-    --surface: rgba(30, 41, 59, 0.55);
-    --surface-solid: #161F32;
-    --border-color: rgba(71, 85, 105, 0.5);
-    --text-dark: #F1F5F9;
-    --text-muted: #94A3B8;
-    --sidebar-bg: rgba(15, 23, 42, 0.55);
-    --shadow-soft: 0 10px 25px -5px rgba(0, 0, 0, 0.45), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
-"""
-
-st.markdown(f"""
+st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
 
-    :root {{
-        {_root_vars_dark if _dark else _root_vars_light}
-        --radius-lg: 22px;
-        --radius-md: 16px;
-        --radius-sm: 10px;
-    }}
+    :root {
+        --primary: #6366F1;
+        --primary-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+        --accent-glow: rgba(99, 102, 241, 0.25);
+        --bg-main: #F1F5F9;
+        --surface: #FFFFFF;
+        --border-color: #E2E8F0;
+        --text-dark: #0F172A;
+        --text-muted: #64748B;
+        --radius-lg: 20px;
+        --radius-md: 14px;
+        --shadow-soft: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    }
 
-    html, body, [class*="css"] {{
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }}
-    h1, h2, h3, h4 {{
-        font-family: 'Outfit', sans-serif !important;
+    html, body, [class*="css"] { 
+        font-family: 'Plus Jakarta Sans', sans-serif; 
+    }
+    h1, h2, h3, h4 { 
+        font-family: 'Outfit', sans-serif !important; 
         letter-spacing: -0.02em;
-    }}
-    p, span, label, li, div {{ color: var(--text-dark); }}
+    }
 
-    .stApp {{
-        background:
-            radial-gradient(circle at 15% 10%, var(--accent-glow) 0%, transparent 45%),
-            radial-gradient(circle at 85% 90%, rgba(236,72,153,0.15) 0%, transparent 45%),
-            linear-gradient(135deg, var(--bg-app-1) 0%, var(--bg-app-2) 50%, var(--bg-app-3) 100%);
+    .stApp { 
+        background: linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 50%, #E0E7FF 100%);
         background-attachment: fixed;
-    }}
-    .block-container {{ padding-top: 1.5rem !important; max-width: 1260px; }}
+    }
+    .block-container { padding-top: 1.5rem !important; max-width: 1240px; }
 
-    #MainMenu, footer, [data-testid="stDeployButton"] {{ visibility: hidden; height: 0; }}
-    header[data-testid="stHeader"] {{ background: transparent !important; }}
+    #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
+    header[data-testid="stHeader"] { background: transparent !important; }
 
-    ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
-    ::-webkit-scrollbar-thumb {{ background: var(--primary-2); border-radius: 10px; opacity: 0.5; }}
-    ::-webkit-scrollbar-track {{ background: transparent; }}
-
-    /* ---------- Animated Header ---------- */
-    .header-box {{
-        background: linear-gradient(135deg, #020617 0%, #111827 55%, #1E1B4B 100%) !important;
-        padding: 40px 24px;
+    /* Header Box - Dark Navy */
+    .header-box {
+        background: linear-gradient(135deg, #020617 0%, #0F172A 60%, #1E293B 100%) !important;
+        padding: 32px 24px;
         border-radius: var(--radius-lg);
         text-align: center;
         color: #FFFFFF !important;
-        margin-bottom: 26px;
+        margin-bottom: 24px;
         position: relative;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 25px 45px -12px rgba(2, 6, 23, 0.55);
-    }}
-    .header-box::before {{
-        content: "";
-        position: absolute; inset: -40%;
-        background:
-            radial-gradient(circle at 20% 30%, rgba(99,102,241,0.35), transparent 55%),
-            radial-gradient(circle at 80% 70%, rgba(236,72,153,0.3), transparent 55%),
-            radial-gradient(circle at 50% 100%, rgba(139,92,246,0.25), transparent 55%);
-        animation: meshDrift 14s ease-in-out infinite alternate;
-        pointer-events: none;
-    }}
-    @keyframes meshDrift {{
-        0% {{ transform: translate(0,0) scale(1); }}
-        100% {{ transform: translate(3%, -3%) scale(1.08); }}
-    }}
-    .header-inner {{ position: relative; z-index: 2; }}
-
-    .uni-logo-wrapper {{
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 20px 35px -10px rgba(2, 6, 23, 0.5);
+    }
+    
+    /* Clean, Crisp & Perfectly Scaled University Logo */
+    .uni-logo-wrapper {
         display: inline-block;
         background: #FFFFFF;
-        padding: 9px 15px;
-        border-radius: 20px;
-        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
-        margin-bottom: 16px;
-    }}
-    .uni-logo-corner {{
-        height: 66px;
+        padding: 8px 14px;
+        border-radius: 18px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+        margin-bottom: 14px;
+    }
+    .uni-logo-corner {
+        height: 68px; 
         width: auto;
         display: block;
         margin: 0 auto;
         object-fit: contain;
         border-radius: 4px;
-    }}
-    .header-box h2 {{
-        color: #FFFFFF !important;
-        font-size: 1.9rem !important;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    .header-box h2 { 
+        color: #FFFFFF !important; 
+        font-size: 1.85rem !important; 
         font-weight: 800 !important;
-        margin: 0;
-        letter-spacing: 0.2px;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    }}
-    .header-tagline {{
-        margin-top: 8px;
-        color: rgba(255,255,255,0.65) !important;
-        font-size: 0.85rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }}
+        margin: 0; 
+        letter-spacing: 0.3px;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
 
-    /* ---------- Sidebar ---------- */
-    section[data-testid="stSidebar"] {{
-        background: var(--sidebar-bg) !important;
-        backdrop-filter: blur(22px) saturate(180%) !important;
-        -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
-        border-right: 1px solid var(--border-color) !important;
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.05) !important;
-    }}
-    section[data-testid="stSidebar"] .stTextInput input,
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div {{
-        background: var(--surface-solid) !important;
-        color: var(--text-dark) !important;
-        border: 1px solid var(--border-color) !important;
+    /* GLASSMORPHISM SIDEBAR STYLING */
+    section[data-testid="stSidebar"] {
+        background: rgba(255, 255, 255, 0.45) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.6) !important;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.03) !important;
+    }
+
+    section[data-testid="stSidebar"] .stTextInput input, 
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        background: rgba(255, 255, 255, 0.65) !important;
+        border: 1px solid rgba(203, 213, 225, 0.7) !important;
+        backdrop-filter: blur(8px) !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
         transition: all 0.25s ease !important;
-    }}
+    }
+
     section[data-testid="stSidebar"] .stTextInput input:focus,
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div:focus-within {{
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 3px var(--accent-glow) !important;
-    }}
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div:focus-within {
+        border-color: #6366F1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+    }
 
-    .theme-toggle-row {{ display:flex; gap:8px; margin-bottom: 6px; }}
-
-    /* ---------- Course Card Banner ---------- */
-    .course-card {{
+    /* Course Card Banner */
+    .course-card {
         background: var(--primary-gradient);
-        padding: 22px 30px;
-        border-radius: var(--radius-md);
-        color: white;
-        margin-bottom: 26px;
-        box-shadow: 0 15px 30px -8px rgba(99, 102, 241, 0.4);
+        padding: 20px 28px; 
+        border-radius: var(--radius-md); 
+        color: white; 
+        margin-bottom: 24px;
+        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.35);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        position: relative;
-        overflow: hidden;
-    }}
-    .course-card::after {{
-        content: "";
-        position: absolute; top: -50%; right: -10%;
-        width: 220px; height: 220px; border-radius: 50%;
-        background: rgba(255,255,255,0.12);
-        filter: blur(10px);
-    }}
-    .course-card h1 {{
-        color: #FFFFFF !important;
-        font-size: 1.5rem;
-        margin: 0;
+    }
+    .course-card h1 { 
+        color: #FFFFFF !important; 
+        font-size: 1.45rem; 
+        margin: 0; 
         font-weight: 700;
-        position: relative; z-index: 2;
-    }}
-    .course-card .badge {{
-        position: relative; z-index: 2;
-        font-size: 0.78rem; text-transform: uppercase; opacity: 0.9;
-        font-weight: 800; letter-spacing: 0.08em;
-        background: rgba(255,255,255,0.18);
-        padding: 4px 12px; border-radius: 20px;
-        display: inline-block; margin-bottom: 6px;
-    }}
+    }
 
-    /* ---------- Metric / Stat Cards ---------- */
-    .metric-card {{
-        background: var(--surface);
-        backdrop-filter: blur(14px);
-        border: 1px solid var(--border-color);
+    /* Stat/Metric Cards */
+    .metric-card {
+        background: rgba(255, 255, 255, 0.75); 
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8); 
         border-radius: var(--radius-md);
-        padding: 22px;
-        text-align: center;
+        padding: 20px; 
+        text-align: center; 
         box-shadow: var(--shadow-soft);
-        transition: all 0.28s cubic-bezier(.4,0,.2,1);
-        position: relative;
-    }}
-    .metric-card:hover {{
-        transform: translateY(-5px);
-        border-color: var(--primary-2);
-        box-shadow: 0 18px 34px -10px var(--accent-glow);
-    }}
-    .metric-card-icon {{ font-size: 1.4rem; margin-bottom: 6px; }}
-    .metric-card-val {{
-        font-family: 'Outfit', sans-serif;
-        font-size: 2.3rem;
+        transition: all 0.25s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-4px);
+        border-color: #C7D2FE;
+        box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.15);
+    }
+    .metric-card-val {
+        font-family: 'Outfit', sans-serif; 
+        font-size: 2.2rem; 
         font-weight: 800;
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: #4F46E5; 
         margin-bottom: 2px;
         line-height: 1;
-    }}
-    .metric-card-lbl {{
-        font-size: 0.78rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }}
+    }
+    .metric-card-lbl { 
+        font-size: 0.78rem; 
+        font-weight: 700; 
+        color: var(--text-muted); 
+        text-transform: uppercase; 
+        letter-spacing: 0.05em;
+    }
 
-    /* ---------- Nav Tabs ---------- */
-    div[data-testid="stRadio"] {{
-        background: var(--surface);
-        backdrop-filter: blur(12px);
-        padding: 7px;
-        border-radius: 20px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 22px;
-        box-shadow: var(--shadow-soft);
-    }}
-    div[data-testid="stRadio"] > div {{
-        display: flex !important;
-        flex-direction: row !important;
+    /* Navigation Radio Tabs Styling */
+    div[data-testid="stRadio"] {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(10px);
+        padding: 6px;
+        border-radius: 18px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        margin-bottom: 20px;
+    }
+    div[data-testid="stRadio"] > div {
+        display: flex !important; 
+        flex-direction: row !important; 
         flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        gap: 6px !important;
+        overflow-x: auto !important; 
+        gap: 6px !important; 
         padding: 2px !important;
         scrollbar-width: none;
-    }}
-    div[data-testid="stRadio"] > div::-webkit-scrollbar {{ display: none; }}
-    div[data-testid="stRadio"] input[type="radio"] {{ display: none !important; }}
-    div[data-testid="stRadio"] label {{
-        background-color: transparent !important;
+    }
+    div[data-testid="stRadio"] > div::-webkit-scrollbar { display: none; }
+    div[data-testid="stRadio"] input[type="radio"] { display: none !important; }
+    div[data-testid="stRadio"] label {
+        background-color: transparent !important; 
         border: none !important;
-        border-radius: 13px !important;
-        padding: 11px 20px !important;
-        color: var(--text-muted) !important;
-        font-weight: 600 !important;
-        font-size: 0.88rem !important;
+        border-radius: 12px !important; 
+        padding: 10px 20px !important; 
+        color: #475569 !important;
+        font-weight: 600 !important; 
+        font-size: 0.88rem !important; 
         cursor: pointer !important;
-        white-space: nowrap !important;
-        transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap !important; 
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         margin: 0 !important;
-    }}
-    div[data-testid="stRadio"] label:hover {{
-        color: var(--text-dark) !important;
-        background: rgba(99,102,241,0.08) !important;
-    }}
-    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {{
-        background: var(--primary-gradient) !important;
-        box-shadow: 0 6px 16px var(--accent-glow) !important;
-    }}
-    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p {{
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-    }}
+    }
+    div[data-testid="stRadio"] label:hover {
+        color: #0F172A !important;
+        background: rgba(255,255,255,0.7) !important;
+    }
+    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {
+        background: #FFFFFF !important; 
+        color: #4F46E5 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    }
+    div[data-testid="stRadio"] label:has(input[type="radio"]:checked) p { 
+        color: #4F46E5 !important; 
+        font-weight: 700 !important; 
+    }
 
-    /* ---------- Buttons ---------- */
-    .stButton > button {{
-        background: var(--primary-gradient) !important;
+    /* Primary Buttons */
+    .stButton > button {
+        background: var(--primary-gradient) !important; 
         color: white !important;
-        border-radius: 13px !important;
-        padding: 10px 24px !important;
-        font-weight: 700 !important;
+        border-radius: 12px !important; 
+        padding: 10px 24px !important; 
+        font-weight: 700 !important; 
         border: none !important;
-        box-shadow: 0 6px 16px var(--accent-glow) !important;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25) !important;
         transition: all 0.2s ease !important;
-    }}
-    .stButton > button:hover {{
-        transform: translateY(-2px) !important;
-        box-shadow: 0 10px 22px var(--accent-glow) !important;
-    }}
-    .stDownloadButton > button {{
-        border-radius: 13px !important;
-        font-weight: 700 !important;
-    }}
+    }
+    .stButton > button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35) !important;
+    }
 
-    /* ---------- Chat ---------- */
-    [data-testid="stChatMessage"] {{
-        background: var(--surface) !important;
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--border-color) !important;
-        border-radius: var(--radius-md) !important;
-        box-shadow: var(--shadow-soft);
-    }}
-
-    /* ---------- Skeleton Loader (shimmer) ---------- */
-    .skeleton-wrap {{
-        padding: 22px;
-        background: var(--surface-solid);
-        border-radius: 16px;
-        border: 1px solid var(--border-color);
-        margin: 12px 0;
-        box-shadow: var(--shadow-soft);
-    }}
-    .skeleton-badge {{
-        font-weight: 700; color: var(--primary);
-        margin-bottom: 14px; font-size: 0.9rem;
-        display: flex; align-items: center; gap: 8px;
-    }}
-    .skeleton-badge .dot {{
-        width: 8px; height: 8px; border-radius: 50%;
-        background: var(--primary-gradient);
-        animation: dotPulse 1s infinite ease-in-out;
-    }}
-    @keyframes dotPulse {{ 0%,100%{{transform:scale(1);opacity:1;}} 50%{{transform:scale(1.5);opacity:.5;}} }}
-    .skeleton-line {{
-        height: 13px; border-radius: 7px; margin-bottom: 10px;
-        background: linear-gradient(90deg, rgba(148,163,184,0.15) 25%, rgba(148,163,184,0.35) 37%, rgba(148,163,184,0.15) 63%);
-        background-size: 400% 100%;
-        animation: shimmer 1.4s ease-in-out infinite;
-    }}
-    @keyframes shimmer {{ 0%{{background-position:100% 50%;}} 100%{{background-position:0% 50%;}} }}
-
-    /* ---------- Leaderboard rank pills ---------- */
-    .rank-pill {{
-        display:inline-flex; align-items:center; justify-content:center;
-        width: 30px; height: 30px; border-radius: 50%;
-        font-weight: 800; font-size: 0.85rem; color: white;
-    }}
-
-    /* ---------- Misc ---------- */
-    .section-heading {{
-        font-family:'Outfit',sans-serif; font-weight:800; font-size:1.15rem;
-        margin: 18px 0 10px 0; color: var(--text-dark);
-        display:flex; align-items:center; gap:8px;
-    }}
-    .empty-state {{
-        text-align:center; padding: 40px 20px; color: var(--text-muted);
-        background: var(--surface); border: 1px dashed var(--border-color);
-        border-radius: var(--radius-md);
-    }}
+    /* Skeleton Loader */
+    .skeleton-wrap { padding: 20px; background: #FFF; border-radius: 14px; border: 1px solid #E2E8F0; margin: 12px 0; }
+    .skeleton-badge { font-weight: 700; color: #4F46E5; margin-bottom: 14px; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+    .skeleton-line { height: 12px; background: #F1F5F9; margin-bottom: 10px; border-radius: 6px; animation: pulse 1.5s infinite ease-in-out; }
+    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -653,13 +476,10 @@ else:
 
 st.markdown(f"""
     <div class="header-box">
-        <div class="header-inner">
-            <div class="uni-logo-wrapper">
-                {_logo_img}
-            </div>
-            <h2>Department of Environmental Science and Engineering</h2>
-            <div class="header-tagline">🎓 EduHub · AI-Powered Academic Workspace</div>
+        <div class="uni-logo-wrapper">
+            {_logo_img}
         </div>
+        <h2>Department of Environmental Science and Engineering</h2>
     </div>
 """, unsafe_allow_html=True)
 
@@ -684,15 +504,8 @@ COURSES = {
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
-    st.markdown("<h3 style='font-size: 1.15rem; font-weight: 800; margin-bottom: 12px;'>⚙️ Workspace Navigation</h3>", unsafe_allow_html=True)
-
-    theme_label = "🌙 Switch to Dark" if not _dark else "☀️ Switch to Light"
-    if st.button(theme_label, use_container_width=True, key="theme_toggle_btn"):
-        st.session_state["ui_theme"] = "dark" if not _dark else "light"
-        st.rerun()
-
-    st.divider()
-
+    st.markdown("<h3 style='font-size: 1.15rem; font-weight: 700; color: #0F172A; margin-bottom: 12px;'>Workspace Navigation</h3>", unsafe_allow_html=True)
+    
     search_query = st.text_input("🔍 Search Courses", placeholder="e.g. hydrology", key="global_search_input")
     if search_query.strip():
         q = search_query.strip().lower()
@@ -708,10 +521,10 @@ with st.sidebar:
     selected_title = COURSES[selected_code]
 
     st.divider()
-    st.markdown("<p style='font-size: 0.8rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em;'>👤 YOUR PROFILE</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 0.8rem; font-weight: 800; color: #64748B; letter-spacing: 0.05em;'>YOUR PROFILE</p>", unsafe_allow_html=True)
     student_name_input = st.text_input("Your Name", placeholder="e.g. Amir Hamja Ratul", key="student_name_field")
     student_roll_input = st.text_input("Roll Number", placeholder="e.g. 25103402", key="student_roll_field")
-
+    
     if student_roll_input.strip():
         st.session_state["student_id"] = student_roll_input.strip()
         st.session_state["student_name"] = student_name_input.strip() or student_roll_input.strip()
@@ -726,7 +539,7 @@ with st.sidebar:
 st.markdown(f"""
     <div class="course-card">
         <div>
-            <span class="badge">Active Course Material</span>
+            <span style="font-size: 0.8rem; text-transform: uppercase; opacity: 0.85; font-weight: 700; letter-spacing: 0.05em;">Active Course Material</span>
             <h1>🎓 {selected_code}: {selected_title}</h1>
         </div>
     </div>
@@ -748,7 +561,7 @@ if admin_pass == "285277":
 
 api_key = st.secrets.get("GOOGLE_API_KEY", os.environ.get("GOOGLE_API_KEY", None))
 if not api_key:
-    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets বা Environment Variable-এ যুক্ত করুন।")
+    st.error("⚠️ GOOGLE_API_KEY পাওয়া যায়নি! Streamlit Secrets বা Environment Variable-এ যুক্ত করুন।")
     st.stop()
 os.environ["GOOGLE_API_KEY"] = api_key
 
@@ -761,13 +574,11 @@ if local_pdfs:
     raw_text, total_pages = extract_text_from_local_pdfs(tuple(local_pdfs), mtimes)
 
 if raw_text.strip():
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
-        st.markdown(f'<div class="metric-card"><div class="metric-card-icon">📁</div><div class="metric-card-val">{files_count}</div><div class="metric-card-lbl">Documents Loaded</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><div class="metric-card-val">{files_count}</div><div class="metric-card-lbl">📁 Documents Loaded</div></div>', unsafe_allow_html=True)
     with col2:
-        st.markdown(f'<div class="metric-card"><div class="metric-card-icon">📄</div><div class="metric-card-val">{total_pages}</div><div class="metric-card-lbl">Pages Indexed</div></div>', unsafe_allow_html=True)
-    with col3:
-        st.markdown(f'<div class="metric-card"><div class="metric-card-icon">🤖</div><div class="metric-card-val">AI</div><div class="metric-card-lbl">Assistant Ready</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><div class="metric-card-val">{total_pages}</div><div class="metric-card-lbl">📄 Total Pages Indexed</div></div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
 tab_selection = st.radio(
@@ -788,13 +599,13 @@ if raw_text.strip():
 # TAB 1: 📖 VIEW & DOWNLOAD
 # ==========================================================
 if tab_selection == "📖 View & Download":
-    st.markdown(f'<div class="section-heading">📖 View &amp; Download — {selected_code}</div>', unsafe_allow_html=True)
+    st.subheader(f"📖 View & Download - {selected_code}")
     track("View Document", selected_code)
-
+    
     if local_pdfs:
         selected_pdf = st.selectbox("📄 Select PDF File", local_pdfs, format_func=os.path.basename)
         pdf_name = os.path.basename(selected_pdf)
-
+        
         with open(selected_pdf, "rb") as f:
             pdf_bytes = f.read()
             base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
@@ -808,19 +619,18 @@ if tab_selection == "📖 View & Download":
                 mime="application/pdf",
                 use_container_width=True
             )
-
+            
         with col_save:
             save_offline_html = f"""
             <button onclick="saveToIndexedDB()" style="
                 background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-                color: white; padding: 11px 20px; border: none; border-radius: 13px;
+                color: white; padding: 11px 20px; border: none; border-radius: 12px;
                 font-weight: 700; font-size: 0.9rem; cursor: pointer; width: 100%;
-                box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3); font-family: 'Plus Jakarta Sans', sans-serif;
-                transition: transform 0.2s ease;
-            " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); font-family: 'Plus Jakarta Sans', sans-serif;
+            ">
                 💾 Save for Offline Reading
             </button>
-            <p id="save-status" style="margin-top: 8px; font-weight: 600; color: #10B981; text-align: center; font-size: 0.85rem;"></p>
+            <p id="save-status" style="margin-top: 6px; font-weight: 600; color: #10B981; text-align: center; font-size: 0.85rem;"></p>
 
             <script>
             function saveToIndexedDB() {{
@@ -851,38 +661,34 @@ if tab_selection == "📖 View & Download":
             }}
             </script>
             """
-            components.html(save_offline_html, height=80)
+            components.html(save_offline_html, height=75)
 
         st.divider()
         display_pdf(selected_pdf)
     else:
-        st.markdown('<div class="empty-state">⚠️ এই কোর্সের জন্য কোনো স্থানীয় PDF ফাইল খুঁজে পাওয়া যায়নি।</div>', unsafe_allow_html=True)
+        st.warning("⚠️ এই কোর্সের জন্য কোনো স্থানীয় PDF ফাইল খুঁজে পাওয়া যায়নি।")
 
 # ==========================================================
 # TAB 2: 📲 OFFLINE SAVED PDFS
 # ==========================================================
 elif tab_selection == "📲 Offline Saved PDFs":
-    st.markdown('<div class="section-heading">📲 Course-Wise Offline PDF Manager</div>', unsafe_allow_html=True)
-    st.caption("🌐 নেট কানেকশন না থাকলেও পূর্বে সেভ করা PDF কোর্স অনুযায়ী বেছে পড়তে পারবেন।")
+    st.subheader("📲 Course-Wise Offline PDF Manager")
+    st.caption("🌐 নেট কানেকশন না থাকলেও পূর্বে সেভ করা PDF কোর্স অনুযায়ী বেছে পড়তে পারবেন।")
 
     courses_js_array = str(list(COURSES.keys()))
-    _panel_bg = "rgba(22,31,50,0.85)" if _dark else "rgba(255,255,255,0.85)"
-    _panel_border = "#334155" if _dark else "#E2E8F0"
-    _text_col = "#F1F5F9" if _dark else "#0F172A"
-    _muted_col = "#94A3B8" if _dark else "#64748B"
 
     offline_manager_html = f"""
-    <div style="background: {_panel_bg}; backdrop-filter: blur(14px); padding: 24px; border-radius: 18px; border: 1px solid {_panel_border}; box-shadow: 0 8px 20px rgba(0,0,0,0.06);">
+    <div style="background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); padding: 22px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
         <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-            <label style="font-weight: 700; color: {_text_col}; font-family: sans-serif;">📂 Select Course:</label>
+            <label style="font-weight: 700; color: #0F172A; font-family: sans-serif;">📂 Select Course:</label>
             <select id="courseFilter" onchange="loadOfflinePDFs()" style="
                 padding: 10px 16px; border-radius: 10px; border: 1px solid #6366F1;
-                font-weight: 600; background: {_panel_bg}; color:{_text_col}; outline: none; cursor: pointer; font-family: sans-serif;
+                font-weight: 600; background: #F8FAFC; outline: none; cursor: pointer; font-family: sans-serif;
             ">
                 <option value="ALL">-- ALL SAVED COURSES --</option>
             </select>
             <button onclick="loadOfflinePDFs()" style="
-                background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+                background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
                 color: white; padding: 10px 18px; border: none; border-radius: 10px;
                 font-weight: 700; cursor: pointer; font-family: sans-serif;
             ">
@@ -896,17 +702,13 @@ elif tab_selection == "📲 Offline Saved PDFs":
             </button>
         </div>
 
-        <div id="status-msg" style="font-weight: 600; margin-bottom: 15px; color: #818CF8; font-family: sans-serif;"></div>
+        <div id="status-msg" style="font-weight: 600; margin-bottom: 15px; color: #4F46E5; font-family: sans-serif;"></div>
         <div id="pdf-display-area"></div>
     </div>
 
     <script>
     const courseList = {courses_js_array};
-    const textCol = "{_text_col}";
-    const mutedCol = "{_muted_col}";
-    const panelBg = "{_panel_bg}";
-    const panelBorder = "{_panel_border}";
-
+    
     function populateDropdown() {{
         let select = document.getElementById("courseFilter");
         courseList.forEach(code => {{
@@ -932,43 +734,43 @@ elif tab_selection == "📲 Offline Saved PDFs":
         request.onsuccess = function(e) {{
             let db = e.target.result;
             if (!db.objectStoreNames.contains("pdf_store")) {{
-                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
+                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
                 return;
             }}
             let tx = db.transaction("pdf_store", "readonly");
             let store = tx.objectStore("pdf_store");
             let req = store.getAll();
-
+            
             req.onsuccess = function() {{
                 let allFiles = req.result;
-                let filtered = (selectedCourse === "ALL")
-                    ? allFiles
+                let filtered = (selectedCourse === "ALL") 
+                    ? allFiles 
                     : allFiles.filter(item => item.course_code === selectedCourse);
 
                 if (filtered.length === 0) {{
-                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
+                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
                 }} else {{
-                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
+                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
                     filtered.forEach(item => {{
                         let card = document.createElement("div");
-                        card.style.cssText = "background: " + panelBg + "; border: 1px solid " + panelBorder + "; border-radius: 14px; padding: 16px; margin-bottom: 20px;";
-
+                        card.style.cssText = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 20px;";
+                        
                         let header = document.createElement("div");
                         header.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;";
-                        header.innerHTML = "<div><h4 style='margin:0; color:" + textCol + "; font-family:sans-serif;'>📄 " + item.file_name + "</h4><small style='color:" + mutedCol + "; font-family:sans-serif;'>Course: " + item.course_code + " | Saved on: " + (item.saved_at || 'N/A') + "</small></div>";
-
+                        header.innerHTML = "<div><h4 style='margin:0; color:#0F172A; font-family:sans-serif;'>📄 " + item.file_name + "</h4><small style='color:#64748B; font-family:sans-serif;'>Course: " + item.course_code + " | Saved on: " + (item.saved_at || 'N/A') + "</small></div>";
+                        
                         let delBtn = document.createElement("button");
                         delBtn.innerText = "🗑️ Delete";
                         delBtn.style.cssText = "background:#EF4444; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:600; cursor:pointer; font-family:sans-serif;";
                         delBtn.onclick = function() {{ deleteOfflinePDF(item.id); }};
-
+                        
                         header.appendChild(delBtn);
                         card.appendChild(header);
 
                         let iframe = document.createElement("iframe");
                         iframe.src = "data:application/pdf;base64," + item.base64;
-                        iframe.style.cssText = "width: 100%; height: 600px; border: 1px solid " + panelBorder + "; border-radius: 10px;";
-
+                        iframe.style.cssText = "width: 100%; height: 600px; border: 1px solid #CBD5E1; border-radius: 8px;";
+                        
                         card.appendChild(iframe);
                         container.appendChild(card);
                     }});
@@ -1009,7 +811,7 @@ elif tab_selection == "📲 Offline Saved PDFs":
     setTimeout(loadOfflinePDFs, 300);
     </script>
     """
-    components.html(offline_manager_html, height=760, scrolling=True)
+    components.html(offline_manager_html, height=750, scrolling=True)
 
 # ==========================================================
 # TAB 3: 💬 AI Q&A
@@ -1017,9 +819,9 @@ elif tab_selection == "📲 Offline Saved PDFs":
 elif tab_selection == "💬 AI Q&A":
     col_title, col_clear = st.columns([4, 1])
     with col_title:
-        st.markdown(f'<div class="section-heading">💬 AI Study Assistant — {selected_code}</div>', unsafe_allow_html=True)
+        st.subheader(f"💬 AI Study Assistant - {selected_code}")
     with col_clear:
-        if st.button("🧹 Clear Chat", use_container_width=True):
+        if st.button("🧹 Clear Chat"):
             st.session_state.messages = []
             st.rerun()
 
@@ -1039,10 +841,10 @@ elif tab_selection == "💬 AI Q&A":
             if vector_store:
                 placeholder = st.empty()
                 placeholder.markdown(skeleton_html("Analyzing Documents"), unsafe_allow_html=True)
-
+                
                 docs = vector_store.similarity_search(user_query, k=4)
                 answer = ask_gemini(llm, docs, user_query)
-
+                
                 placeholder.markdown(answer)
                 st.session_state.messages.append({"role": "assistant", "content": answer})
                 track("Ask Question", selected_code)
@@ -1053,13 +855,13 @@ elif tab_selection == "💬 AI Q&A":
 # TAB 4: 📝 SMART SUMMARY
 # ==========================================================
 elif tab_selection == "📝 Smart Summary":
-    st.markdown(f'<div class="section-heading">📝 Auto Notes &amp; Summary Generator — {selected_code}</div>', unsafe_allow_html=True)
-
+    st.subheader(f"📝 Auto Notes & Summary Generator - {selected_code}")
+    
     if st.button("✨ Generate Smart Academic Notes", use_container_width=True):
         if raw_text.strip():
             placeholder = st.empty()
             placeholder.markdown(skeleton_html("Summarizing Course Topics"), unsafe_allow_html=True)
-
+            
             prompt = (
                 f"Create concise, well-structured academic study notes from the text below.\n"
                 f"Include key definitions, main topics, and bullet points in Bengali:\n\n{raw_text[:12000]}"
@@ -1072,19 +874,19 @@ elif tab_selection == "📝 Smart Summary":
             except Exception as e:
                 placeholder.error(f"Failed to generate summary: {e}")
         else:
-            st.warning("⚠️ নোট তৈরি করতে ফাইল টেক্সট প্রয়োজন।")
+            st.warning("⚠️ নোট তৈরি করতে ফাইল টেক্সট প্রয়োজন।")
 
 # ==========================================================
 # TAB 5: 🎯 EXAM QUIZ
 # ==========================================================
 elif tab_selection == "🎯 Exam Quiz":
-    st.markdown(f'<div class="section-heading">🎯 Interactive Exam Quiz — {selected_code}</div>', unsafe_allow_html=True)
-
+    st.subheader(f"🎯 Interactive Exam Quiz - {selected_code}")
+    
     if st.button("🎲 Generate Practice Quiz", use_container_width=True):
         if raw_text.strip():
             placeholder = st.empty()
             placeholder.markdown(skeleton_html("Creating Quiz Questions"), unsafe_allow_html=True)
-
+            
             prompt = (
                 f"Generate 5 Multiple Choice Questions (MCQs) with options and 3 Short Answer Questions "
                 f"based on the text below. Language: Bengali.\n\n{raw_text[:10000]}"
@@ -1093,78 +895,51 @@ elif tab_selection == "🎯 Exam Quiz":
                 quiz_res = llm.invoke(prompt)
                 content = quiz_res.content if hasattr(quiz_res, 'content') else str(quiz_res)
                 placeholder.empty()
-
+                
                 with st.expander("📝 View Practice Questions & Solutions", expanded=True):
                     st.markdown(content)
                 track("Generated Quiz", selected_code)
             except Exception as e:
                 placeholder.error(f"Quiz generation error: {e}")
         else:
-            st.warning("⚠️ কুইজ তৈরি করতে ডকুমেন্ট টেক্সট পাওয়া যায়নি।")
+            st.warning("⚠️ কুইজ তৈরি করতে ডকুমেন্ট টেক্সট পাওয়া যায়নি।")
 
 # ==========================================================
 # TAB 6: 📈 MY PROGRESS
 # ==========================================================
 elif tab_selection == "📈 My Progress":
-    st.markdown('<div class="section-heading">📈 Personal Activity &amp; Progress Tracker</div>', unsafe_allow_html=True)
+    st.subheader("📈 Personal Activity & Progress Tracker")
     sid = st.session_state.get("student_id")
-
+    
     if sid:
         streak = get_study_streak(sid)
         total_act = get_total_activities(sid)
         progress = get_course_progress(sid)
-
-        c1, c2 = st.columns([1, 1])
+        
+        c1, c2 = st.columns(2)
         with c1:
-            st.markdown(
-                f'<div class="metric-card">{circular_progress_svg(streak, max_value=30, label="Study Streak", emoji="🔥")}</div>',
-                unsafe_allow_html=True
-            )
+            st.markdown(f'<div class="metric-card"><div class="metric-card-val">🔥 {streak} Days</div><div class="metric-card-lbl">Study Streak</div></div>', unsafe_allow_html=True)
         with c2:
-            st.markdown(
-                f'<div class="metric-card">{circular_progress_svg(total_act, max_value=max(total_act,10), label="Total Actions", emoji="⚡")}</div>',
-                unsafe_allow_html=True
-            )
-
-        st.markdown('<div class="section-heading">📊 Course Activity Distribution</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-card"><div class="metric-card-val">⚡ {total_act}</div><div class="metric-card-lbl">Total Actions</div></div>', unsafe_allow_html=True)
+            
+        st.markdown("<br>### 📊 Course Activity Distribution", unsafe_allow_html=True)
         if progress:
             df = pd.DataFrame(list(progress.items()), columns=["Course Code", "Total Activities"])
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(df, use_container_width=True)
         else:
-            st.markdown('<div class="empty-state">এখনো কোন এক্টিভিটি রেকর্ড হয়নি। পড়ালেখা ও চ্যাট শুরু করলে ডাটা আপডেট হবে।</div>', unsafe_allow_html=True)
+            st.info("এখনো কোন এক্টিভিটি রেকর্ড হয়নি। পড়ালেখা ও চ্যাট শুরু করলে ডাটা আপডেট হবে।")
     else:
-        st.markdown('<div class="empty-state">👉 আপনার প্রতিদিনের অগ্রগতি সেভ করতে সাইডবারে রোল নম্বর যোগ করুন।</div>', unsafe_allow_html=True)
+        st.info("👉 আপনার প্রতিদিনের অগ্রগতি সেভ করতে সাইডবারে রোল নম্বর যোগ করুন।")
 
 # ==========================================================
 # TAB 7: 📊 LEADERBOARD
 # ==========================================================
 elif tab_selection == "📊 Leaderboard":
-    st.markdown('<div class="section-heading">📊 Top Active Student Leaderboard</div>', unsafe_allow_html=True)
+    st.subheader("📊 Top Active Student Leaderboard")
     board_data = get_leaderboard()
-
+    
     if board_data:
-        medal_colors = {0: "#F59E0B", 1: "#94A3B8", 2: "#B45309"}
-        medal_emojis = {0: "🥇", 1: "🥈", 2: "🥉"}
-
-        for idx, (name, roll, acts, last_active) in enumerate(board_data):
-            rank_display = medal_emojis.get(idx, f"#{idx+1}")
-            rank_bg = medal_colors.get(idx, "#6366F1")
-            initial = (name or "?")[0].upper()
-            st.markdown(f"""
-                <div class="metric-card" style="display:flex; align-items:center; justify-content:space-between; text-align:left; padding: 14px 20px; margin-bottom: 10px;">
-                    <div style="display:flex; align-items:center; gap:14px;">
-                        <div class="rank-pill" style="background:{rank_bg};">{rank_display if idx < 3 else idx+1}</div>
-                        <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-gradient);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;">{initial}</div>
-                        <div>
-                            <div style="font-weight:700; font-size:0.95rem;">{name}</div>
-                            <div style="font-size:0.78rem; color:var(--text-muted);">Roll: {roll} · Last active: {last_active}</div>
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.3rem; color:var(--primary);">{acts}</div>
-                        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Activities</div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
+        df_lb = pd.DataFrame(board_data, columns=["Student Name", "Roll Number", "Activities", "Last Active"])
+        st.dataframe(df_lb, use_container_width=True)
     else:
-        st.markdown('<div class="empty-state">লিডারবোর্ডে এখনো ডাটা যুক্ত হয়নি। সাইডবারে নাম ও রোল দিয়ে কুইজ বা চ্যাট শুরু করুন!</div>', unsafe_allow_html=True)
+        st.info("লিডারবোর্ডে এখনো ডাটা যুক্ত হয়নি। সাইডবারে নাম ও রোল দিয়ে কুইজ বা চ্যাট শুরু করুন!")
