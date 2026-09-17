@@ -661,7 +661,7 @@ if tab_selection == "📖 View & Download":
         st.warning("⚠️ এই কোর্সের জন্য কোনো স্থানীয় PDF ফাইল খুঁজে পাওয়া যায়নি।")
 
 # ==========================================================
-# TAB 2: 📲 OFFLINE SAVED PDFS (BLOB URL FIX APPLIED)
+# TAB 2: 📲 OFFLINE SAVED PDFS (PDF.JS CANVAS FIX)
 # ==========================================================
 elif tab_selection == "📲 Offline Saved PDFs":
     st.subheader("📲 Course-Wise Offline PDF Manager")
@@ -670,6 +670,12 @@ elif tab_selection == "📲 Offline Saved PDFs":
     courses_js_array = str(list(COURSES.keys()))
 
     offline_manager_html = f"""
+    <!-- PDF.js Library CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+
     <div style="background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); padding: 22px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
         <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
             <label style="font-weight: 700; color: #0F172A; font-family: sans-serif;">📂 Select Course:</label>
@@ -701,22 +707,43 @@ elif tab_selection == "📲 Offline Saved PDFs":
     <script>
     const courseList = {courses_js_array};
 
-    function base64ToBlobUrl(base64, type = 'application/pdf') {{
+    function renderPdfPages(base64Data, container) {{
         try {{
-            const binStr = atob(base64);
-            const len = binStr.length;
-            const arr = new Uint8Array(len);
+            let binaryStr = atob(base64Data);
+            let len = binaryStr.length;
+            let bytes = new Uint8Array(len);
             for (let i = 0; i < len; i++) {{
-                arr[i] = binStr.charCodeAt(i);
+                bytes[i] = binaryStr.charCodeAt(i);
             }}
-            const blob = new Blob([arr], {{ type: type }});
-            return URL.createObjectURL(blob);
-        }} catch (e) {{
-            console.error("Base64 conversion error:", e);
-            return null;
+
+            pdfjsLib.getDocument({{data: bytes}}).promise.then(function(pdf) {{
+                let pdfViewerDiv = document.createElement("div");
+                pdfViewerDiv.style.cssText = "max-height: 650px; overflow-y: auto; padding: 15px; background: #E2E8F0; border-radius: 8px;";
+                container.appendChild(pdfViewerDiv);
+
+                let renderPages = async () => {{
+                    for (let num = 1; num <= pdf.numPages; num++) {{
+                        let page = await pdf.getPage(num);
+                        let viewport = page.getViewport({{scale: 1.2}});
+                        let canvas = document.createElement('canvas');
+                        let ctx = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        canvas.style.cssText = "width: 100%; max-width: 800px; display: block; margin: 0 auto 15px auto; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);";
+                        
+                        pdfViewerDiv.appendChild(canvas);
+                        await page.render({{canvasContext: ctx, viewport: viewport}}).promise;
+                    }}
+                }};
+                renderPages();
+            }}).catch(function(err) {{
+                container.innerHTML += "<p style='color:red; font-family:sans-serif;'>❌ PDF রেন্ডার করতে সমস্যা হয়েছে: " + err.message + "</p>";
+            }});
+        }} catch(e) {{
+            container.innerHTML += "<p style='color:red; font-family:sans-serif;'>❌ ফাইল লোড করতে সমস্যা হয়েছে।</p>";
         }}
     }}
-    
+
     function populateDropdown() {{
         let select = document.getElementById("courseFilter");
         courseList.forEach(code => {{
@@ -742,7 +769,7 @@ elif tab_selection == "📲 Offline Saved PDFs":
         request.onsuccess = function(e) {{
             let db = e.target.result;
             if (!db.objectStoreNames.contains("pdf_store")) {{
-                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
+                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
                 return;
             }}
             let tx = db.transaction("pdf_store", "readonly");
@@ -756,9 +783,9 @@ elif tab_selection == "📲 Offline Saved PDFs":
                     : allFiles.filter(item => item.course_code === selectedCourse);
 
                 if (filtered.length === 0) {{
-                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
+                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
                 }} else {{
-                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
+                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
                     filtered.forEach(item => {{
                         let card = document.createElement("div");
                         card.style.cssText = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 20px;";
@@ -775,20 +802,8 @@ elif tab_selection == "📲 Offline Saved PDFs":
                         header.appendChild(delBtn);
                         card.appendChild(header);
 
-                        let blobUrl = base64ToBlobUrl(item.base64);
-                        if (blobUrl) {{
-                            let iframe = document.createElement("iframe");
-                            iframe.src = blobUrl;
-                            iframe.style.cssText = "width: 100%; height: 600px; border: 1px solid #CBD5E1; border-radius: 8px;";
-                            card.appendChild(iframe);
-                        }} else {{
-                            let errP = document.createElement("p");
-                            errP.style.color = "red";
-                            errP.innerText = "❌ PDF লোড করতে সমস্যা হয়েছে।";
-                            card.appendChild(errP);
-                        }}
-
                         container.appendChild(card);
+                        renderPdfPages(item.base64, card);
                     }});
                 }}
             }};
