@@ -661,11 +661,11 @@ if tab_selection == "📖 View & Download":
         st.warning("⚠️ এই কোর্সের জন্য কোনো স্থানীয় PDF ফাইল খুঁজে পাওয়া যায়নি।")
 
 # ==========================================================
-# TAB 2: 📲 OFFLINE SAVED PDFS (PDF.JS CANVAS FIX)
+# TAB 2: 📲 OFFLINE SAVED PDFS
 # ==========================================================
 elif tab_selection == "📲 Offline Saved PDFs":
     st.subheader("📲 Course-Wise Offline PDF Manager")
-    st.caption("🌐 নেট কানেকশন না থাকলেও পূর্বে সেভ করা PDF কোর্স অনুযায়ী বেছে পড়তে পারবেন।")
+    st.caption("🌐 নেট কানেকশন না থাকলেও পূর্বে সেভ করা PDF কোর্স অনুযায়ী বেছে পড়তে পারবেন।")
 
     courses_js_array = str(list(COURSES.keys()))
 
@@ -737,10 +737,10 @@ elif tab_selection == "📲 Offline Saved PDFs":
                 }};
                 renderPages();
             }}).catch(function(err) {{
-                container.innerHTML += "<p style='color:red; font-family:sans-serif;'>❌ PDF রেন্ডার করতে সমস্যা হয়েছে: " + err.message + "</p>";
+                container.innerHTML += "<p style='color:red; font-family:sans-serif;'>❌ PDF রেন্ডার করতে সমস্যা হয়েছে: " + err.message + "</p>";
             }});
         }} catch(e) {{
-            container.innerHTML += "<p style='color:red; font-family:sans-serif;'>❌ ফাইল লোড করতে সমস্যা হয়েছে।</p>";
+            container.innerHTML += "<p style='color:red; font-family:sans-serif;'>❌ ফাইল লোড করতে সমস্যা হয়েছে।</p>";
         }}
     }}
 
@@ -769,7 +769,7 @@ elif tab_selection == "📲 Offline Saved PDFs":
         request.onsuccess = function(e) {{
             let db = e.target.result;
             if (!db.objectStoreNames.contains("pdf_store")) {{
-                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
+                statusDiv.innerHTML = "❌ কোনো সেভ করা PDF পাওয়া যায়নি। 'View & Download' ট্যাব থেকে আগে সেভ করুন।";
                 return;
             }}
             let tx = db.transaction("pdf_store", "readonly");
@@ -783,9 +783,9 @@ elif tab_selection == "📲 Offline Saved PDFs":
                     : allFiles.filter(item => item.course_code === selectedCourse);
 
                 if (filtered.length === 0) {{
-                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
+                    statusDiv.innerHTML = "⚠️ <b>" + selectedCourse + "</b> কোর্সের কোনো সেভ করা অফলাইন ফাইল পাওয়া যায়নি।";
                 }} else {{
-                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
+                    statusDiv.innerHTML = "✅ মোট <b>" + filtered.length + "</b> টি অফলাইন PDF পাওয়া গেছে:";
                     filtered.forEach(item => {{
                         let card = document.createElement("div");
                         card.style.cssText = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 20px;";
@@ -793,45 +793,28 @@ elif tab_selection == "📲 Offline Saved PDFs":
                         let header = document.createElement("div");
                         header.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;";
                         header.innerHTML = "<div><h4 style='margin:0; color:#0F172A; font-family:sans-serif;'>📄 " + item.file_name + "</h4><small style='color:#64748B; font-family:sans-serif;'>Course: " + item.course_code + " | Saved on: " + (item.saved_at || 'N/A') + "</small></div>";
-                        
-                        let delBtn = document.createElement("button");
-                        delBtn.innerText = "🗑️ Delete";
-                        delBtn.style.cssText = "background:#EF4444; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:600; cursor:pointer; font-family:sans-serif;";
-                        delBtn.onclick = function() {{ deleteOfflinePDF(item.id); }};
-                        
-                        header.appendChild(delBtn);
                         card.appendChild(header);
 
+                        let renderContainer = document.createElement("div");
+                        card.appendChild(renderContainer);
+
                         container.appendChild(card);
-                        renderPdfPages(item.base64, card);
+                        renderPdfPages(item.base64, renderContainer);
                     }});
                 }}
             }};
         }};
     }}
 
-    function deleteOfflinePDF(id) {{
-        let request = indexedDB.open("EduHubOfflineDB", 2);
-        request.onsuccess = function(e) {{
-            let db = e.target.result;
-            let tx = db.transaction("pdf_store", "readwrite");
-            let store = tx.objectStore("pdf_store");
-            store.delete(id);
-            tx.oncomplete = function() {{
-                loadOfflinePDFs();
-            }};
-        }};
-    }}
-
     function clearAllOfflineData() {{
-        if(confirm("আপনি কি অফলাইনে সেভ করা সকল PDF মুছে ফেলতে চান?")) {{
+        if (confirm("আপনি কি নিশ্চিত যে সমস্ত সেভ করা অফলাইন ফাইল মুছে ফেলতে চান?")) {{
             let request = indexedDB.open("EduHubOfflineDB", 2);
             request.onsuccess = function(e) {{
                 let db = e.target.result;
                 let tx = db.transaction("pdf_store", "readwrite");
-                let store = tx.objectStore("pdf_store");
-                store.clear();
+                tx.objectStore("pdf_store").clear();
                 tx.oncomplete = function() {{
+                    alert("সব সেভ করা অফলাইন PDF মুছে ফেলা হয়েছে!");
                     loadOfflinePDFs();
                 }};
             }};
@@ -848,102 +831,108 @@ elif tab_selection == "📲 Offline Saved PDFs":
 # TAB 3: 💬 AI Q&A
 # ==========================================================
 elif tab_selection == "💬 AI Q&A":
-    st.subheader(f"💬 AI Course Assistant - {selected_code}")
-    
-    if not vector_store:
-        st.info("ℹ️ এই কোর্সের জন্য কোনো পড়া বা টেক্সট ফাইল পাওয়া যায়নি। PDF আপলোড বা যুক্ত করুন।")
+    st.subheader(f"💬 Ask AI about {selected_code}")
+    if not raw_text.strip():
+        st.warning("⚠️ এই কোর্সের জন্য কোনো ডকুমেন্টের টেক্সট পাওয়া যায়নি। আগে PDF আপলোড করুন।")
     else:
-        user_question = st.text_input("❓ আপনার প্রশ্নটি লিখুন (যেমন: What is Hydrology?):")
-        if st.button("🔍 Answer Question", use_container_width=True):
-            if user_question.strip():
-                with st.spinner("🧠 AI নথি বিশ্লেষণ করছে..."):
-                    docs = vector_store.similarity_search(user_question, k=4)
-                    answer = ask_gemini(llm, docs, user_question)
-                    st.markdown("### 🤖 Answer:")
-                    st.write(answer)
-                    track("AI Query", selected_code)
+        user_query = st.text_input("আপনার প্রশ্ন লিখুন (বাংলা বা ইংরেজিতে):", placeholder="যেমন: Hydrology এর সংজ্ঞা কি?")
+        if st.button("🚀 উত্তর পান", use_container_width=True):
+            if user_query.strip():
+                with st.spinner("🔍 AI উত্তর তৈরি করছে..."):
+                    if vector_store:
+                        docs = vector_store.similarity_search(user_query, k=4)
+                        ans = ask_gemini(llm, docs, user_query)
+                        st.markdown("### 💡 AI উত্তর:")
+                        st.info(ans)
+                        track("AI Q&A", selected_code)
+                    else:
+                        st.error("Vector Store তৈরি করা সম্ভব হয়নি।")
             else:
-                st.warning("⚠️ অনুগ্রহ করে একটি প্রশ্ন লিখুন।")
+                st.warning("অনুগ্রহ করে একটি প্রশ্ন লিখুন।")
 
 # ==========================================================
 # TAB 4: 📝 SMART SUMMARY
 # ==========================================================
 elif tab_selection == "📝 Smart Summary":
-    st.subheader(f"📝 Smart Summary - {selected_code}")
-    
+    st.subheader(f"📝 Smart Course Summary - {selected_code}")
     if not raw_text.strip():
-        st.info("ℹ️ সামারি তৈরি করার জন্য কোনো টেক্সট পাওয়া যায়নি।")
+        st.warning("⚠️ সামারি তৈরি করার জন্য কোনো টেক্সট পাওয়া যায়নি।")
     else:
-        if st.button("✨ Generate Key Summary", use_container_width=True):
-            with st.spinner("⚡ সামারি তৈরি হচ্ছে..."):
-                prompt = f"Summarize the following study materials into key points in Bengali language:\n\n{raw_text[:8000]}"
+        if st.button("✨ সামারি তৈরি করুন", use_container_width=True):
+            with st.spinner("📝 ডকুমেন্টের গুরুত্বপূর্ণ বিষয়বস্তু সামারাইজ করা হচ্ছে..."):
+                summary_prompt = f"Role: Academic Summarizer.\nCourse: {selected_code}\nText:\n{raw_text[:6000]}\n\nCreate a well-structured key takeaways summary in Bengali with bullet points:"
                 try:
-                    response = llm.invoke(prompt)
-                    summary_text = response.content if hasattr(response, 'content') else str(response)
-                    st.markdown("### 📌 Key Highlights:")
-                    st.write(summary_text)
-                    track("Generated Summary", selected_code)
+                    res = llm.invoke(summary_prompt)
+                    summary_text = res.content if hasattr(res, 'content') else str(res)
+                    st.markdown("### 📌 কোর্স সামারি")
+                    st.success(summary_text)
+                    track("Smart Summary", selected_code)
                 except Exception as e:
-                    st.error(f"Error: {e}")
+                    st.error(f"Error generating summary: {e}")
 
 # ==========================================================
 # TAB 5: 🎯 EXAM QUIZ
 # ==========================================================
 elif tab_selection == "🎯 Exam Quiz":
-    st.subheader(f"🎯 Practice Quiz Generator - {selected_code}")
-    
+    st.subheader(f"🎯 Practice Quiz - {selected_code}")
     if not raw_text.strip():
-        st.info("ℹ️ কুইজ তৈরির জন্য কোনো টেক্সট পাওয়া যায়নি।")
+        st.warning("⚠️ কুইজ তৈরি করার জন্য কোর্সের ডকুমেন্ট প্রয়োজন।")
     else:
-        if st.button("🎲 Generate 5 Quiz Questions", use_container_width=True):
+        quiz_type = st.selectbox("কুইজের ধরন নির্বাচন করুন:", ["Multiple Choice (MCQ)", "Short Questions"])
+        if st.button("🎲 কুইজ তৈরি করুন", use_container_width=True):
             with st.spinner("🎯 কুইজ প্রশ্ন তৈরি হচ্ছে..."):
-                prompt = f"Create 5 practice exam questions with options and correct answers in Bengali based on this context:\n\n{raw_text[:8000]}"
+                quiz_prompt = f"Role: Exam Question Creator.\nCourse: {selected_code}\nType: {quiz_type}\nText:\n{raw_text[:5000]}\n\nGenerate 5 important practice questions with answers/explanations in Bengali:"
                 try:
-                    response = llm.invoke(prompt)
-                    quiz_text = response.content if hasattr(response, 'content') else str(response)
-                    st.markdown("### 📝 Exam Practice Questions:")
+                    res = llm.invoke(quiz_prompt)
+                    quiz_text = res.content if hasattr(res, 'content') else str(res)
+                    st.markdown("### 📝 আপনার কুইজ প্রশ্নাবলী:")
                     st.write(quiz_text)
-                    track("Quiz Practice", selected_code)
+                    track("Exam Quiz", selected_code)
                 except Exception as e:
-                    st.error(f"Error: {e}")
+                    st.error(f"Error generating quiz: {e}")
 
 # ==========================================================
 # TAB 6: 📈 MY PROGRESS
 # ==========================================================
 elif tab_selection == "📈 My Progress":
-    st.subheader("📈 My Study Progress & Analytics")
+    st.subheader("📈 Personal Learning Analytics")
     sid = st.session_state.get("student_id")
-    
+    sname = st.session_state.get("student_name", "Student")
+
     if not sid:
-        st.warning("⚠️ প্রোগ্রেস দেখতে বামপাশের সাইডবার থেকে আপনার Roll Number প্রদান করুন।")
+        st.info("💡 আপনার অগ্রগতি ও ট্র্যাকিং দেখতে সাইডবারে রোল নম্বর এবং নাম দিন।")
     else:
         streak = get_study_streak(sid)
         total_act = get_total_activities(sid)
-        c_progress = get_course_progress(sid)
-        
-        c1, c2 = st.columns(2)
-        with c1:
+        course_prog = get_course_progress(sid)
+
+        col_s, col_a = st.columns(2)
+        with col_s:
             st.markdown(f'<div class="metric-card"><div class="metric-card-val">🔥 {streak} Days</div><div class="metric-card-lbl">Study Streak</div></div>', unsafe_allow_html=True)
-        with c2:
-            st.markdown(f'<div class="metric-card"><div class="metric-card-val">⚡ {total_act}</div><div class="metric-card-lbl">Total Activities</div></div>', unsafe_allow_html=True)
-            
+        with col_a:
+            st.markdown(f'<div class="metric-card"><div class="metric-card-val">⚡ {total_act}</div><div class="metric-card-lbl">Total Activities Logged</div></div>', unsafe_allow_html=True)
+
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 📊 Course Breakdown")
-        if c_progress:
-            df = pd.DataFrame(list(c_progress.items()), columns=["Course Code", "Activities Count"])
-            st.dataframe(df, use_container_width=True)
+        st.subheader("📚 Course Activity Breakdown")
+        if course_prog:
+            df_prog = pd.DataFrame(list(course_prog.items()), columns=["Course Code", "Activity Count"])
+            st.dataframe(df_prog, use_container_width=True)
         else:
-            st.info("এখনো কোনো অ্যাক্টিভিটি রেকর্ড হয়নি।")
+            st.info("এখনো কোনো অ্যাক্টিভিটি রেকর্ড হয়নি। অধ্যয়ন শুরু করুন!")
 
 # ==========================================================
 # TAB 7: 📊 LEADERBOARD
 # ==========================================================
 elif tab_selection == "📊 Leaderboard":
-    st.subheader("📊 Department Study Leaderboard")
+    st.subheader("📊 Top Active Students Leaderboard")
     leaderboard_data = get_leaderboard()
-    
+
     if leaderboard_data:
-        df_lb = pd.DataFrame(leaderboard_data, columns=["Student Name", "Roll Number", "Total Activities", "Last Active Date"])
+        df_lb = pd.DataFrame(
+            leaderboard_data,
+            columns=["Student Name", "Roll / ID", "Total Activities", "Last Active Date"]
+        )
+        df_lb.index = df_lb.index + 1  # 1-based rank
         st.dataframe(df_lb, use_container_width=True)
     else:
-        st.info("লিডারবোর্ডে এখনো কোনো তথ্য নেই।")
+        st.info("লিডারবোর্ডে এখনো কোনো ডেটা নেই।")
