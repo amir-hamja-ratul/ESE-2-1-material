@@ -228,7 +228,7 @@ def build_vector_store(course_code, text_hash, raw_text):
     return FAISS.from_texts(chunks, embedding=embeddings)
 
 # ==========================================================
-# 4. ADVANCED MODERN SAAS STYLING (DARK NAVY HEADER & ULTRA CLEAR LOGO)
+# 4. ADVANCED MODERN SAAS STYLING (FIXED ULTRA-SHARP LOGO)
 # ==========================================================
 st.markdown("""
 <style>
@@ -265,53 +265,46 @@ st.markdown("""
     #MainMenu, footer, [data-testid="stDeployButton"] { visibility: hidden; height: 0; }
     header[data-testid="stHeader"] { background: transparent !important; }
 
-    /* Modern Dark Navy Header Box */
+    /* Header Box - Dark Navy */
     .header-box {
-        background: linear-gradient(135deg, #020617 0%, #0F172A 50%, #1E293B 100%) !important;
-        padding: 36px 28px;
+        background: linear-gradient(135deg, #020617 0%, #0F172A 60%, #1E293B 100%) !important;
+        padding: 32px 24px;
         border-radius: var(--radius-lg);
         text-align: center;
         color: #FFFFFF !important;
         margin-bottom: 24px;
         position: relative;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        box-shadow: 0 20px 40px -10px rgba(2, 6, 23, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-    .header-box::before {
-        content: '';
-        position: absolute;
-        top: -50%; left: 50%;
-        transform: translateX(-50%);
-        width: 80%; height: 100%;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
-        pointer-events: none;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 20px 35px -10px rgba(2, 6, 23, 0.5);
     }
     
-    /* High Clarity Sharp University Logo Container */
-    .uni-logo-corner {
-        display: block; 
-        margin: 0 auto 16px auto; 
-        width: 92px; 
-        height: 92px; 
-        border-radius: 22px;
-        background: #FFFFFF !important; 
-        padding: 6px; 
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.85);
-        object-fit: contain;
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
-        transition: transform 0.3s ease;
+    /* Clean, Crisp & Perfectly Scaled University Logo */
+    .uni-logo-wrapper {
+        display: inline-block;
+        background: #FFFFFF;
+        padding: 8px 14px;
+        border-radius: 18px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+        margin-bottom: 14px;
     }
-    .uni-logo-corner:hover { transform: scale(1.05) rotate(2deg); }
+    .uni-logo-corner {
+        height: 68px; 
+        width: auto;
+        display: block;
+        margin: 0 auto;
+        object-fit: contain;
+        border-radius: 4px;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
 
     .header-box h2 { 
         color: #FFFFFF !important; 
-        font-size: 2rem !important; 
+        font-size: 1.85rem !important; 
         font-weight: 800 !important;
         margin: 0; 
-        letter-spacing: 0.5px;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+        letter-spacing: 0.3px;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     }
 
     /* GLASSMORPHISM SIDEBAR STYLING */
@@ -477,13 +470,15 @@ def _load_logo_b64():
 
 _logo_b64 = _load_logo_b64()
 if _logo_b64:
-    _logo_html = f'<img src="data:image/png;base64,{_logo_b64}" class="uni-logo-corner">'
+    _logo_img = f'<img src="data:image/png;base64,{_logo_b64}" class="uni-logo-corner" alt="Logo">'
 else:
-    _logo_html = '<img src="https://i.ibb.co.com/8DstCsX1/attachment-158389628.png" class="uni-logo-corner">'
+    _logo_img = '<img src="https://i.ibb.co.com/8DstCsX1/attachment-158389628.png" class="uni-logo-corner" alt="Logo">'
 
 st.markdown(f"""
     <div class="header-box">
-        {_logo_html}
+        <div class="uni-logo-wrapper">
+            {_logo_img}
+        </div>
         <h2>Department of Environmental Science and Engineering</h2>
     </div>
 """, unsafe_allow_html=True)
