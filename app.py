@@ -496,21 +496,20 @@ COURSES = {
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
-    st.markdown(
-        """
-        <style>
-        [data-testid="stSidebar"] img {
-            width: 120px !important;
-            height: 120px !important;
-            border-radius: 50% !important;
-            border: 4px solid #2e7d32 !important;
-            object-fit: cover !important;
-            display: block;
-            margin: 0 auto;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
+  st.markdown(f"""
+    <div style="
+        text-align: center; 
+        margin-bottom: 18px; 
+        padding: 14px; 
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(79, 70, 229, 0.05) 100%); 
+        backdrop-filter: blur(12px);
+        border-radius: 18px; 
+        border: 1.5px solid rgba(99, 102, 241, 0.3); 
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
+    ">
+        <img src="data:image/png;base64,{b64_logo}" style="max-width: 85%; height: auto; border-radius: 50%;">
+    </div>
+""", unsafe_allow_html=True)
     )
     sidebar_logo_png = os.path.join(ASSETS_DIR, "ese10_logo.png")
     sidebar_logo_jpg = os.path.join(ASSETS_DIR, "ese10_logo.jpg")
