@@ -159,7 +159,7 @@ def get_embeddings_model():
 @st.cache_resource(show_spinner=False)
 def get_llm(_api_key):
     from langchain_google_genai import ChatGoogleGenerativeAI
-    return ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=_api_key, temperature=0.3)
+    return ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", google_api_key=_api_key, temperature=0.3)
 
 @st.cache_data(show_spinner=False)
 def extract_text_from_local_pdfs(pdf_paths, cache_key):
