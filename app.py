@@ -6,15 +6,6 @@ import sqlite3
 import hashlib
 import base64
 from datetime import date, datetime
-from PIL import Image
-import fitz  # PyMuPDF
-import pandas as pd
-from PyPDF2 import PdfReader
-
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_google_genai import ChatGoogleGenerativeAI
 import streamlit.components.v1 as components
 
 # ==========================================================
@@ -163,7 +154,7 @@ def track(action, course_code):
         log_activity(sid, sname, course_code, action)
 
 # ==========================================================
-# 3. HELPER FUNCTIONS & AI RAG
+# 3. HELPER FUNCTIONS & LAZY-LOADED AI RAG
 # ==========================================================
 def ask_gemini(llm, docs, question):
     context = "\n\n".join([doc.page_content for doc in docs])
@@ -176,6 +167,9 @@ def ask_gemini(llm, docs, question):
 
 def display_pdf(file_path):
     try:
+        import fitz  # Lazy import PyMuPDF
+        from PIL import Image # Lazy import PIL
+        
         doc = fitz.open(file_path)
         st.info(f"📖 **Total Pages:** {len(doc)}")
         for page_num in range(len(doc)):
@@ -199,14 +193,17 @@ def skeleton_html(label="Processing"):
 
 @st.cache_resource(show_spinner=False)
 def get_embeddings_model():
+    from langchain_huggingface import HuggingFaceEmbeddings # Lazy import
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 @st.cache_resource(show_spinner=False)
 def get_llm(_api_key):
+    from langchain_google_genai import ChatGoogleGenerativeAI # Lazy import
     return ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=_api_key, temperature=0.3)
 
 @st.cache_data(show_spinner=False)
 def extract_text_from_local_pdfs(pdf_paths, cache_key):
+    from PyPDF2 import PdfReader # Lazy import
     raw, pages = "", 0
     for pdf_path in pdf_paths:
         try:
@@ -222,6 +219,9 @@ def extract_text_from_local_pdfs(pdf_paths, cache_key):
 @st.cache_resource(show_spinner=False)
 def build_vector_store(course_code, text_hash, raw_text):
     if not raw_text.strip(): return None
+    from langchain_text_splitters import RecursiveCharacterTextSplitter # Lazy import
+    from langchain_community.vectorstores import FAISS # Lazy import
+    
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = text_splitter.split_text(raw_text)
     embeddings = get_embeddings_model()
@@ -580,13 +580,6 @@ tab_selection = st.radio(
     label_visibility="collapsed"
 )
 
-llm = get_llm(api_key)
-vector_store = None
-
-if raw_text.strip():
-    text_hash = hashlib.md5(raw_text.encode("utf-8")).hexdigest()
-    vector_store = build_vector_store(selected_code, text_hash, raw_text)
-
 # ==========================================================
 # TAB 1: 📖 VIEW & DOWNLOAD
 # ==========================================================
@@ -793,36 +786,51 @@ elif tab_selection == "📲 Offline Saved PDFs":
                         let header = document.createElement("div");
                         header.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;";
                         header.innerHTML = "<div><h4 style='margin:0; color:#0F172A; font-family:sans-serif;'>📄 " + item.file_name + "</h4><small style='color:#64748B; font-family:sans-serif;'>Course: " + item.course_code + " | Saved on: " + (item.saved_at || 'N/A') + "</small></div>";
+                        
+                        let deleteBtn = document.createElement("button");
+                        deleteBtn.innerText = "🗑️ Delete";
+                        deleteBtn.style.cssText = "background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: sans-serif;";
+                        deleteBtn.onclick = function() {{ deleteSinglePdf(item.id); }};
+                        
+                        header.appendChild(deleteBtn);
                         card.appendChild(header);
-
-                        let renderContainer = document.createElement("div");
-                        card.appendChild(renderContainer);
-
+                        
+                        renderPdfPages(item.base64, card);
                         container.appendChild(card);
-                        renderPdfPages(item.base64, renderContainer);
                     }});
                 }}
             }};
         }};
     }}
 
+    function deleteSinglePdf(id) {{
+        let request = indexedDB.open("EduHubOfflineDB", 2);
+        request.onsuccess = function(e) {{
+            let db = e.target.result;
+            let tx = db.transaction("pdf_store", "readwrite");
+            let store = tx.objectStore("pdf_store");
+            store.delete(id);
+            tx.oncomplete = function() {{ loadOfflinePDFs(); }};
+        }};
+    }}
+
     function clearAllOfflineData() {{
-        if (confirm("আপনি কি নিশ্চিত যে সমস্ত সেভ করা অফলাইন ফাইল মুছে ফেলতে চান?")) {{
+        if(confirm("আপনি কি নিশ্চিত যে সব সেভ করা অফলাইন ফাইল মুছে ফেলতে চান?")) {{
             let request = indexedDB.open("EduHubOfflineDB", 2);
             request.onsuccess = function(e) {{
                 let db = e.target.result;
                 let tx = db.transaction("pdf_store", "readwrite");
-                tx.objectStore("pdf_store").clear();
-                tx.oncomplete = function() {{
-                    alert("সব সেভ করা অফলাইন PDF মুছে ফেলা হয়েছে!");
-                    loadOfflinePDFs();
-                }};
+                let store = tx.objectStore("pdf_store");
+                store.clear();
+                tx.oncomplete = function() {{ loadOfflinePDFs(); }};
             }};
         }}
     }}
 
-    populateDropdown();
-    loadOfflinePDFs();
+    window.onload = function() {{
+        populateDropdown();
+        loadOfflinePDFs();
+    }};
     </script>
     """
     components.html(offline_manager_html, height=800, scrolling=True)
@@ -832,107 +840,109 @@ elif tab_selection == "📲 Offline Saved PDFs":
 # ==========================================================
 elif tab_selection == "💬 AI Q&A":
     st.subheader(f"💬 Ask AI about {selected_code}")
+    track("AI Query", selected_code)
+    
     if not raw_text.strip():
-        st.warning("⚠️ এই কোর্সের জন্য কোনো ডকুমেন্টের টেক্সট পাওয়া যায়নি। আগে PDF আপলোড করুন।")
+        st.warning("⚠️ এই কোর্সের কোনো পড়া পাওয়া যায়নি! Q&A ব্যবহার করতে PDF টিউটোরিয়াল যোগ করুন।")
     else:
-        user_query = st.text_input("আপনার প্রশ্ন লিখুন (বাংলা বা ইংরেজিতে):", placeholder="যেমন: Hydrology এর সংজ্ঞা কি?")
-        if st.button("🚀 উত্তর পান", use_container_width=True):
-            if user_query.strip():
-                with st.spinner("🔍 AI উত্তর তৈরি করছে..."):
-                    if vector_store:
-                        docs = vector_store.similarity_search(user_query, k=4)
-                        ans = ask_gemini(llm, docs, user_query)
-                        st.markdown("### 💡 AI উত্তর:")
-                        st.info(ans)
-                        track("AI Q&A", selected_code)
-                    else:
-                        st.error("Vector Store তৈরি করা সম্ভব হয়নি।")
-            else:
-                st.warning("অনুগ্রহ করে একটি প্রশ্ন লিখুন।")
+        text_hash = hashlib.md5(raw_text.encode("utf-8")).hexdigest()
+        with st.spinner("⚡ Initializing AI Search Engine..."):
+            vector_store = build_vector_store(selected_code, text_hash, raw_text)
+            llm = get_llm(api_key)
+
+        user_query = st.text_input("❓ আপনার প্রশ্নটি লিখুন (বাংলা বা ইংরেজিতে):", key="ai_qa_input")
+        if st.button("🚀 Ask Question", use_container_width=True) and user_query:
+            with st.spinner("🧠 AI চিন্তা করছে..."):
+                docs = vector_store.similarity_search(user_query, k=4)
+                answer = ask_gemini(llm, docs, user_query)
+                st.markdown("### 🤖 AI Answer:")
+                st.write(answer)
 
 # ==========================================================
 # TAB 4: 📝 SMART SUMMARY
 # ==========================================================
 elif tab_selection == "📝 Smart Summary":
-    st.subheader(f"📝 Smart Course Summary - {selected_code}")
+    st.subheader(f"📝 Smart Summary - {selected_code}")
+    track("Generate Summary", selected_code)
+    
     if not raw_text.strip():
-        st.warning("⚠️ সামারি তৈরি করার জন্য কোনো টেক্সট পাওয়া যায়নি।")
+        st.warning("⚠️ সামারি তৈরি করার মতো কোনো ডাটা পাওয়া যায়নি।")
     else:
-        if st.button("✨ সামারি তৈরি করুন", use_container_width=True):
-            with st.spinner("📝 ডকুমেন্টের গুরুত্বপূর্ণ বিষয়বস্তু সামারাইজ করা হচ্ছে..."):
-                summary_prompt = f"Role: Academic Summarizer.\nCourse: {selected_code}\nText:\n{raw_text[:6000]}\n\nCreate a well-structured key takeaways summary in Bengali with bullet points:"
+        if st.button("✨ Generate Course Summary", use_container_width=True):
+            with st.spinner("📝 AI মূল পয়েন্টগুলো সংক্ষেপ করছে..."):
+                llm = get_llm(api_key)
+                summary_prompt = f"Summarize the following study material for {selected_code} into key points in Bengali:\n\n{raw_text[:4000]}"
                 try:
-                    res = llm.invoke(summary_prompt)
-                    summary_text = res.content if hasattr(res, 'content') else str(res)
-                    st.markdown("### 📌 কোর্স সামারি")
-                    st.success(summary_text)
-                    track("Smart Summary", selected_code)
+                    response = llm.invoke(summary_prompt)
+                    res_text = response.content if hasattr(response, 'content') else str(response)
+                    st.markdown(res_text)
                 except Exception as e:
-                    st.error(f"Error generating summary: {e}")
+                    st.error(f"Error: {e}")
 
 # ==========================================================
 # TAB 5: 🎯 EXAM QUIZ
 # ==========================================================
 elif tab_selection == "🎯 Exam Quiz":
-    st.subheader(f"🎯 Practice Quiz - {selected_code}")
+    st.subheader(f"🎯 Interactive Quiz - {selected_code}")
+    track("Take Quiz", selected_code)
+    
     if not raw_text.strip():
-        st.warning("⚠️ কুইজ তৈরি করার জন্য কোর্সের ডকুমেন্ট প্রয়োজন।")
+        st.warning("⚠️ কুইজ জেনারেট করার মতো কোনো কনটেন্ট নেই।")
     else:
-        quiz_type = st.selectbox("কুইজের ধরন নির্বাচন করুন:", ["Multiple Choice (MCQ)", "Short Questions"])
-        if st.button("🎲 কুইজ তৈরি করুন", use_container_width=True):
-            with st.spinner("🎯 কুইজ প্রশ্ন তৈরি হচ্ছে..."):
-                quiz_prompt = f"Role: Exam Question Creator.\nCourse: {selected_code}\nType: {quiz_type}\nText:\n{raw_text[:5000]}\n\nGenerate 5 important practice questions with answers/explanations in Bengali:"
+        if st.button("🎲 Generate Practice Quiz", use_container_width=True):
+            with st.spinner("🎯 কুইজ তৈরি করা হচ্ছে..."):
+                llm = get_llm(api_key)
+                quiz_prompt = f"Create 3 Multiple Choice Questions (MCQs) in Bengali based on this context with options and answers:\n\n{raw_text[:3000]}"
                 try:
                     res = llm.invoke(quiz_prompt)
-                    quiz_text = res.content if hasattr(res, 'content') else str(res)
-                    st.markdown("### 📝 আপনার কুইজ প্রশ্নাবলী:")
-                    st.write(quiz_text)
-                    track("Exam Quiz", selected_code)
+                    st.markdown(res.content if hasattr(res, 'content') else str(res))
                 except Exception as e:
-                    st.error(f"Error generating quiz: {e}")
+                    st.error(f"Error: {e}")
 
 # ==========================================================
 # TAB 6: 📈 MY PROGRESS
 # ==========================================================
 elif tab_selection == "📈 My Progress":
-    st.subheader("📈 Personal Learning Analytics")
+    st.subheader("📈 My Academic Progress Track")
     sid = st.session_state.get("student_id")
-    sname = st.session_state.get("student_name", "Student")
-
+    
     if not sid:
-        st.info("💡 আপনার অগ্রগতি ও ট্র্যাকিং দেখতে সাইডবারে রোল নম্বর এবং নাম দিন।")
+        st.info("💡 আপনার অগ্রগতি ট্র্যাক করতে সাইডবারে আপনার Roll Number প্রদান করুন।")
     else:
-        streak = get_study_streak(sid)
-        total_act = get_total_activities(sid)
-        course_prog = get_course_progress(sid)
-
-        col_s, col_a = st.columns(2)
-        with col_s:
-            st.markdown(f'<div class="metric-card"><div class="metric-card-val">🔥 {streak} Days</div><div class="metric-card-lbl">Study Streak</div></div>', unsafe_allow_html=True)
-        with col_a:
-            st.markdown(f'<div class="metric-card"><div class="metric-card-val">⚡ {total_act}</div><div class="metric-card-lbl">Total Activities Logged</div></div>', unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("📚 Course Activity Breakdown")
-        if course_prog:
-            df_prog = pd.DataFrame(list(course_prog.items()), columns=["Course Code", "Activity Count"])
-            st.dataframe(df_prog, use_container_width=True)
+        st.success(f"👤 Student Roll: **{sid}** ({st.session_state.get('student_name', '')})")
+        
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            st.metric("🔥 Study Streak", f"{get_study_streak(sid)} Days")
+        with col_s2:
+            st.metric("📊 Total Actions Logged", get_total_activities(sid))
+            
+        st.divider()
+        st.markdown("#### 📚 Course Activity Breakdown")
+        progress_data = get_course_progress(sid)
+        if progress_data:
+            for c_code, count in progress_data.items():
+                st.write(f"• **{c_code}**: {count} activities")
         else:
-            st.info("এখনো কোনো অ্যাক্টিভিটি রেকর্ড হয়নি। অধ্যয়ন শুরু করুন!")
+            st.caption("এখনো কোনো এক্টিভিটি সেভ হয়নি।")
 
 # ==========================================================
 # TAB 7: 📊 LEADERBOARD
 # ==========================================================
 elif tab_selection == "📊 Leaderboard":
-    st.subheader("📊 Top Active Students Leaderboard")
+    st.subheader("📊 Top Active Learners Leaderboard")
     leaderboard_data = get_leaderboard()
-
+    
     if leaderboard_data:
-        df_lb = pd.DataFrame(
-            leaderboard_data,
-            columns=["Student Name", "Roll / ID", "Total Activities", "Last Active Date"]
-        )
-        df_lb.index = df_lb.index + 1  # 1-based rank
-        st.dataframe(df_lb, use_container_width=True)
+        leaderboard_list = []
+        for rank, row in enumerate(leaderboard_data, 1):
+            leaderboard_list.append({
+                "Rank": f"🏆 #{rank}",
+                "Name": row[0] or "Anonymous",
+                "Roll": row[1],
+                "Activities": row[2],
+                "Last Active": row[3]
+            })
+        st.table(leaderboard_list)
     else:
-        st.info("লিডারবোর্ডে এখনো কোনো ডেটা নেই।")
+        st.info("এখনো লিডারবোর্ডে কোনো রেকর্ড যুক্ত হয়নি।")
