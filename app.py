@@ -66,7 +66,7 @@ updateOnlineStatus();
 """, height=0)
 
 # ==========================================================
-# 2. PROGRESS TRACKING (SQLite Database)
+# 2. ACTIVITY LOGGING & DATABASE (SQLite Database)
 # ==========================================================
 DB_PATH = os.path.join(BASE_DIR, "eduhub_progress.db")
 
@@ -106,36 +106,6 @@ def log_activity(student_id, student_name, course_code, action):
             pass
         finally:
             conn.close()
-
-def get_study_streak(student_id):
-    if not student_id: return 0
-    conn = get_db_connection()
-    if not conn: return 0
-    rows = conn.execute("SELECT DISTINCT activity_date FROM activity_log WHERE student_id = ?", (student_id,)).fetchall()
-    conn.close()
-    if not rows: return 0
-    activity_dates = {date.fromisoformat(r[0]) for r in rows}
-    streak, cursor_date = 0, date.today()
-    while cursor_date in activity_dates:
-        streak += 1
-        cursor_date = date.fromordinal(cursor_date.toordinal() - 1)
-    return streak
-
-def get_total_activities(student_id):
-    if not student_id: return 0
-    conn = get_db_connection()
-    if not conn: return 0
-    row = conn.execute("SELECT COUNT(*) FROM activity_log WHERE student_id = ?", (student_id,)).fetchone()
-    conn.close()
-    return row[0] if row else 0
-
-def get_course_progress(student_id):
-    if not student_id: return {}
-    conn = get_db_connection()
-    if not conn: return {}
-    rows = conn.execute("SELECT course_code, COUNT(*) FROM activity_log WHERE student_id = ? GROUP BY course_code", (student_id,)).fetchall()
-    conn.close()
-    return {r[0]: r[1] for r in rows}
 
 def get_leaderboard():
     conn = get_db_connection()
@@ -180,16 +150,6 @@ def display_pdf(file_path):
             st.image(image, caption=f"Page {page_num + 1}", use_container_width=True)
     except Exception as e:
         st.error(f"Error viewing PDF: {e}")
-
-def skeleton_html(label="Processing"):
-    return f"""
-        <div class="skeleton-wrap">
-            <div class="skeleton-badge"><span class="dot"></span>{label}...</div>
-            <div class="skeleton-line" style="width:90%"></div>
-            <div class="skeleton-line" style="width:75%"></div>
-            <div class="skeleton-line" style="width:60%"></div>
-        </div>
-    """
 
 @st.cache_resource(show_spinner=False)
 def get_embeddings_model():
@@ -323,13 +283,6 @@ st.markdown("""
         transition: all 0.25s ease !important;
     }
 
-    section[data-testid="stSidebar"] .stTextInput input:focus,
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div:focus-within {
-        border-color: #6366F1 !important;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
-        background: rgba(255, 255, 255, 0.85) !important;
-    }
-
     .course-card {
         background: var(--primary-gradient);
         padding: 20px 28px; 
@@ -439,11 +392,6 @@ st.markdown("""
         transform: translateY(-1px) !important;
         box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35) !important;
     }
-
-    .skeleton-wrap { padding: 20px; background: #FFF; border-radius: 14px; border: 1px solid #E2E8F0; margin: 12px 0; }
-    .skeleton-badge { font-weight: 700; color: #4F46E5; margin-bottom: 14px; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
-    .skeleton-line { height: 12px; background: #F1F5F9; margin-bottom: 10px; border-radius: 6px; animation: pulse 1.5s infinite ease-in-out; }
-    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -607,9 +555,10 @@ if raw_text.strip():
         st.markdown(f'<div class="metric-card"><div class="metric-card-val">{total_pages}</div><div class="metric-card-lbl">📄 Total Pages Indexed</div></div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
+# Navigation without Exam Quiz and My Progress
 tab_selection = st.radio(
     "Navigation Tabs",
-    ["📖 View & Download", "📲 Offline Saved PDFs", "💬 AI Q&A", "📝 Smart Summary", "🎯 Exam Quiz", "📈 My Progress", "📊 Leaderboard"],
+    ["📖 View & Download", "📲 Offline Saved PDFs", "💬 AI Q&A", "📝 Smart Summary", "📊 Leaderboard"],
     horizontal=True,
     label_visibility="collapsed"
 )
@@ -883,52 +832,7 @@ elif tab_selection == "📝 Smart Summary":
                     st.error(f"Error: {e}")
 
 # ==========================================================
-# TAB 5: 🎯 EXAM QUIZ
-# ==========================================================
-elif tab_selection == "🎯 Exam Quiz":
-    st.subheader(f"🎯 Practice Quiz - {selected_code}")
-    if not raw_text.strip():
-        st.info("ℹ️ কুইজ তৈরির জন্য কোনো কোর্স কন্টেন্ট পাওয়া যায়নি।")
-    else:
-        if st.button("🎲 কুইজ তৈরি করুন"):
-            track("Generated Quiz", selected_code)
-            llm = get_llm(api_key)
-            prompt = f"Create 5 Multiple Choice Questions (MCQs) in Bengali with 4 options each and answer key based on this text:\n\n{raw_text[:3000]}"
-            with st.spinner("🎯 কুইজ জেনারেট হচ্ছে..."):
-                try:
-                    res = llm.invoke(prompt)
-                    st.markdown(res.content if hasattr(res, 'content') else str(res))
-                except Exception as e:
-                    st.error(f"Error: {e}")
-
-# ==========================================================
-# TAB 6: 📈 MY PROGRESS
-# ==========================================================
-elif tab_selection == "📈 My Progress":
-    st.subheader("📈 My Learning Progress")
-    sid = st.session_state.get("student_id")
-    if not sid:
-        st.warning("⚠️ প্রোগ্রেস দেখার জন্য অনুগ্রহ করে সাইডবারে Your Name এবং Roll Number প্রদান করুন।")
-    else:
-        streak = get_study_streak(sid)
-        total_act = get_total_activities(sid)
-        c_progress = get_course_progress(sid)
-        
-        col_s1, col_s2 = st.columns(2)
-        with col_s1:
-            st.metric("🔥 Study Streak", f"{streak} Days")
-        with col_s2:
-            st.metric("📊 Total Activities", total_act)
-        
-        st.markdown("### 📚 Course Activity Breakdown")
-        if c_progress:
-            for c_code, count in c_progress.items():
-                st.write(f"- **{c_code}**: {count} activities logged")
-        else:
-            st.info("এখনো কোনো অ্যাক্টিভিটি রেকর্ড হয়নি।")
-
-# ==========================================================
-# TAB 7: 📊 LEADERBOARD
+# TAB 5: 📊 LEADERBOARD
 # ==========================================================
 elif tab_selection == "📊 Leaderboard":
     st.subheader("📊 Top Active Students Leaderboard")
