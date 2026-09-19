@@ -126,26 +126,36 @@ def track(action, course_code):
 # ==========================================================
 # 3. HELPER FUNCTIONS & LAZY-LOADED AI RAG
 # ==========================================================
+def parse_ai_response(response):
+    """AI এর রেসপন্স লিস্ট/ডিকশনারি আকারে আসলেও তা থেকে শুধু টেক্সট বের করে আনে"""
+    content = response.content if hasattr(response, 'content') else response
+    if isinstance(content, list):
+        text_parts = []
+        for block in content:
+            if isinstance(block, dict) and "text" in block:
+                text_parts.append(block["text"])
+            elif hasattr(block, "text"):
+                text_parts.append(str(block.text))
+            elif isinstance(block, str):
+                text_parts.append(block)
+        return "".join(text_parts)
+    return str(content)
+
 def ask_gemini(llm, docs, question):
     context = "\n\n".join([doc.page_content for doc in docs])
-    prompt = f"Role: Expert Academic Assistant.\nContext:\n{context}\n\nQuestion: {question}\n\nAnswer in Bengali clearly:"
+    prompt = f"""Role: Expert Academic Assistant.
+Context:
+{context}
+
+Question: {question}
+
+Instructions:
+1. Answer the question clearly in **English** first.
+2. Then, provide an accurate **Bengali translation** right below it under a heading "### 🇧🇩 বাংলা অনুবাদ".
+"""
     try:
         response = llm.invoke(prompt)
-        content = response.content if hasattr(response, 'content') else response
-        
-        # AI উত্তর যদি List/Block আকারে আসে তবে শুধু Text অংশটুকু এক্সট্র্যাক্ট করার লজিক
-        if isinstance(content, list):
-            text_parts = []
-            for block in content:
-                if isinstance(block, dict) and "text" in block:
-                    text_parts.append(block["text"])
-                elif hasattr(block, "text"):
-                    text_parts.append(str(block.text))
-                elif isinstance(block, str):
-                    text_parts.append(block)
-            return "".join(text_parts)
-            
-        return str(content)
+        return parse_ai_response(response)
     except Exception as e:
         return f"⚠️ AI Error: {str(e)}"
 
@@ -837,11 +847,20 @@ elif tab_selection == "📝 Smart Summary":
         if st.button("⚡ সারসংক্ষেপ তৈরি করুন"):
             track("Generated Summary", selected_code)
             llm = get_llm(api_key)
-            prompt = f"Provide a comprehensive, well-structured Bengali summary of key concepts from the following course material:\n\n{raw_text[:4000]}"
-            with st.spinner("📝 সামারি তৈরি হচ্ছে..."):
+            prompt = f"""Provide a comprehensive, well-structured summary of key concepts from the following course material.
+
+Instructions:
+1. Write the main summary in clear **English** first with structured bullet points and headings.
+2. Below the English summary, provide a complete **Bengali translation** under the heading "### 🇧🇩 বাংলা অনুবাদ".
+
+Course Material:
+{raw_text[:4000]}"""
+
+            with st.spinner("📝 English & Bengali Summary তৈরি হচ্ছে..."):
                 try:
                     res = llm.invoke(prompt)
-                    st.markdown(res.content if hasattr(res, 'content') else str(res))
+                    summary_text = parse_ai_response(res)
+                    st.markdown(summary_text)
                 except Exception as e:
                     st.error(f"Error: {e}")
 
