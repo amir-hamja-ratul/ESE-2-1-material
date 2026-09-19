@@ -131,7 +131,21 @@ def ask_gemini(llm, docs, question):
     prompt = f"Role: Expert Academic Assistant.\nContext:\n{context}\n\nQuestion: {question}\n\nAnswer in Bengali clearly:"
     try:
         response = llm.invoke(prompt)
-        return response.content if hasattr(response, 'content') else str(response)
+        content = response.content if hasattr(response, 'content') else response
+        
+        # AI উত্তর যদি List/Block আকারে আসে তবে শুধু Text অংশটুকু এক্সট্র্যাক্ট করার লজিক
+        if isinstance(content, list):
+            text_parts = []
+            for block in content:
+                if isinstance(block, dict) and "text" in block:
+                    text_parts.append(block["text"])
+                elif hasattr(block, "text"):
+                    text_parts.append(str(block.text))
+                elif isinstance(block, str):
+                    text_parts.append(block)
+            return "".join(text_parts)
+            
+        return str(content)
     except Exception as e:
         return f"⚠️ AI Error: {str(e)}"
 
