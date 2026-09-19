@@ -499,6 +499,25 @@ with st.sidebar:
     # ---------------------------------------------------------
     # ESE-10 LOGO
     # ---------------------------------------------------------
+    import streamlit as st
+
+# Custom CSS for sidebar image
+st.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] img {
+        width: 120px !important;             /* ইমেজ ছোট করার জন্য সাইজ */
+        height: 120px !important;            /* সমান হাইট দিলে নিখুঁত সার্কেল হবে */
+        border-radius: 50% !important;       /* সার্কেল করার জন্য */
+        border: 4px solid #2e7d32 !important; /* সবুজ বর্ডার (Green border) */
+        object-fit: cover !important;        /* ইমেজ বিকৃত হওয়া আটকাবে */
+        display: block;
+        margin: 0 auto;                      /* সেন্টারে রাখার জন্য */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
     sidebar_logo_png = os.path.join(ASSETS_DIR, "ese10_logo.png")
     sidebar_logo_jpg = os.path.join(ASSETS_DIR, "ese10_logo.jpg")
     
