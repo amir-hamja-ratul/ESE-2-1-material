@@ -47,7 +47,7 @@ components.html("""
     z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     font-size: 0.9rem;
 ">
-    📡 Offline Mode: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
+    📡 Offline Mode: ইন্টারনেট কানেকশন বিচ্ছিন্ন! আপনি সেভ করা অফলাইন PDF পড়তে পারবেন।
 </div>
 
 <script>
@@ -183,7 +183,7 @@ def get_embeddings_model():
 @st.cache_resource(show_spinner=False)
 def get_llm(_api_key):
     from langchain_google_genai import ChatGoogleGenerativeAI
-    return ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", google_api_key=_api_key, temperature=0.3)
+    return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=_api_key, temperature=0.3)
 
 @st.cache_data(show_spinner=False)
 def extract_text_from_local_pdfs(pdf_paths, cache_key):
@@ -579,7 +579,7 @@ if raw_text.strip():
         st.markdown(f'<div class="metric-card"><div class="metric-card-val">{total_pages}</div><div class="metric-card-lbl">📄 Total Pages Indexed</div></div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-# Navigation without Exam Quiz and My Progress
+# Navigation Tabs
 tab_selection = st.radio(
     "Navigation Tabs",
     ["📖 View & Download", "📲 Offline Saved PDFs", "💬 AI Q&A", "📝 Smart Summary", "📊 Leaderboard"],
@@ -819,61 +819,119 @@ elif tab_selection == "📲 Offline Saved PDFs":
 # TAB 3: 💬 AI Q&A
 # ==========================================================
 elif tab_selection == "💬 AI Q&A":
-    st.subheader(f"💬 AI Assistant for {selected_code}")
+    st.subheader(f"💬 Academic AI Assistant — {selected_code}")
+    st.caption("কোর্সের বিষয়বস্তু নিয়ে যেকোনো প্রশ্ন করুন, AI আপনাকে ব্যাখ্যা ও বাংলা অনুবাদসহ উত্তর দেবে।")
+
     if not raw_text.strip():
-        st.info("ℹ️ এই কোর্সের জন্য কোনো ফাইল/টেক্সট পাওয়া যায়নি। আগে PDF আপলোড অথবা যুক্ত করুন।")
+        st.warning("⚠️ এই কোর্সের কোনো পড়া বা PDF কনটেন্ট পাওয়া যায়নি। প্রশ্ন করার আগে PDF আপলোড/সংযুক্ত করুন।")
     else:
-        text_hash = hashlib.md5(raw_text.encode()).hexdigest()
-        with st.spinner("🔍 Vector Store তৈরি হচ্ছে..."):
-            vector_store = build_vector_store(selected_code, text_hash, raw_text)
+        text_hash = hashlib.md5(raw_text.encode('utf-8')).hexdigest()
         
-        user_q = st.text_input("❓ এই কোর্স সম্পর্কিত যেকোনো প্রশ্ন লিখুন (বাংলা/English):")
-        if st.button("উত্তর দিন", key="btn_ask") and user_q:
-            track("Asked Question", selected_code)
-            docs = vector_store.similarity_search(user_q, k=3)
-            llm = get_llm(api_key)
-            with st.spinner("🤖 AI উত্তর তৈরি করছে..."):
-                ans = ask_gemini(llm, docs, user_q)
-            st.markdown(f"**🤖 উত্তর:**\n\n{ans}")
+        with st.spinner("⚡ AI Vector Database প্রস্তুত হচ্ছে..."):
+            vector_store = build_vector_store(selected_code, text_hash, raw_text)
+
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+
+        # Display Chat Messages
+        for msg in st.session_state.messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        if user_query := st.chat_input("আপনার প্রশ্নটি এখানে লিখুন (যেমন: What is hydrologic cycle?)..."):
+            st.session_state.messages.append({"role": "user", "content": user_query})
+            with st.chat_message("user"):
+                st.markdown(user_query)
+
+            with st.chat_message("assistant"):
+                with st.spinner("🧠 তথ্য বিশ্লেষণ করা হচ্ছে..."):
+                    if vector_store:
+                        docs = vector_store.similarity_search(user_query, k=4)
+                        llm = get_llm(api_key)
+                        response_text = ask_gemini(llm, docs, user_query)
+                    else:
+                        response_text = "⚠️ ভেক্টর স্টোর রেন্ডার করতে সমস্যা হয়েছে।"
+                    
+                    st.markdown(response_text)
+                    track("AI Question", selected_code)
+
+            st.session_state.messages.append({"role": "assistant", "content": response_text})
 
 # ==========================================================
 # TAB 4: 📝 SMART SUMMARY
 # ==========================================================
 elif tab_selection == "📝 Smart Summary":
-    st.subheader(f"📝 Smart Summary - {selected_code}")
+    st.subheader(f"📝 Smart AI Summary & Key Concepts — {selected_code}")
+    st.caption("সম্পূর্ণ কোর্সের সারাংশ এবং গুরুত্বপূর্ণ কনসেপ্টগুলো এক ক্লিকে জেনারেট করুন।")
+
     if not raw_text.strip():
-        st.info("ℹ️ সারসংক্ষেপ তৈরির জন্য কোনো টেক্সট পাওয়া যায়নি।")
+        st.warning("⚠️ সামারি তৈরি করার জন্য কোনো টেক্সট বা PDF কনটেন্ট পাওয়া যায়নি।")
     else:
-        if st.button("⚡ সারসংক্ষেপ তৈরি করুন"):
-            track("Generated Summary", selected_code)
-            llm = get_llm(api_key)
-            prompt = f"""Provide a comprehensive, well-structured summary of key concepts from the following course material.
+        if st.button("✨ Generate Smart Summary", use_container_width=True):
+            with st.spinner("📊 মূল পয়েন্ট এবং সারাংশ এক্সট্র্যাক্ট করা হচ্ছে..."):
+                llm = get_llm(api_key)
+                sample_text = raw_text[:8000]
+                prompt = f"""Role: Senior Academic Specialist.
+Summarize the following study material clearly.
+
+Provide:
+1. Executive Summary (Key Overview)
+2. Core Topics & Important Formulas/Concepts
+3. Key Exam Revision Points
+
+Context Material:
+{sample_text}
 
 Instructions:
-1. Write the main summary in clear **English** first with structured bullet points and headings.
-2. Below the English summary, provide a complete **Bengali translation** under the heading "### 🇧🇩 বাংলা অনুবাদ".
-
-Course Material:
-{raw_text[:4000]}"""
-
-            with st.spinner("📝 English & Bengali Summary তৈরি হচ্ছে..."):
+Provide structured Markdown formatting, and provide an accurate Bengali translation at the end under '### 🇧🇩 বাংলা সারসংক্ষেপ'.
+"""
                 try:
                     res = llm.invoke(prompt)
-                    summary_text = parse_ai_response(res)
-                    st.markdown(summary_text)
+                    summary_output = parse_ai_response(res)
+                    st.markdown(summary_output)
+                    track("Generated Summary", selected_code)
                 except Exception as e:
-                    st.error(f"Error: {e}")
+                    st.error(f"⚠️ Summary Generation Error: {e}")
 
 # ==========================================================
 # TAB 5: 📊 LEADERBOARD
 # ==========================================================
 elif tab_selection == "📊 Leaderboard":
-    st.subheader("📊 Top Active Students Leaderboard")
-    leaderboard = get_leaderboard()
-    if leaderboard:
-        st.table([
-            {"Rank": idx + 1, "Name": row[0] or "Anonymous", "Roll/ID": row[1], "Total Activities": row[2], "Last Active": row[3]}
-            for idx, row in enumerate(leaderboard)
-        ])
+    st.subheader("📊 Top Active Students (Leaderboard)")
+    st.caption("কোর্স ম্যাটেরিয়াল রিভিশন ও AI ফিচার ব্যবহারের ভিত্তিতে শিক্ষার্থীদের র‍্যাংকিং:")
+
+    leaderboard_data = get_leaderboard()
+    if leaderboard_data:
+        st.markdown("""
+        <style>
+            .lb-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-family: 'Plus Jakarta Sans', sans-serif; }
+            .lb-table th { background: #4F46E5; color: white; padding: 14px; text-align: left; border-radius: 8px 8px 0 0; }
+            .lb-table td { padding: 12px 14px; border-bottom: 1px solid #CBD5E1; background: rgba(255, 255, 255, 0.7); }
+            .lb-rank { font-weight: 800; color: #4F46E5; font-size: 1.1rem; }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        rows_html = ""
+        for idx, (sname, sid, total_act, last_act) in enumerate(leaderboard_data, 1):
+            badge = "🥇" if idx == 1 else ("🥈" if idx == 2 else ("🥉" if idx == 3 else f"#{idx}"))
+            display_name = sname if sname else f"Student ({sid})"
+            rows_html += f"<tr><td><span class='lb-rank'>{badge}</span></td><td><b>{display_name}</b></td><td>{sid}</td><td><b>{total_act}</b> activities</td><td>{last_act}</td></tr>"
+        
+        st.markdown(f"""
+        <table class="lb-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Student Name</th>
+                    <th>Roll Number</th>
+                    <th>Total Activity</th>
+                    <th>Last Active</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows_html}
+            </tbody>
+        </table>
+        """, unsafe_allow_html=True)
     else:
-        st.info("লিডারবোর্ডে এখনো কোনো ডেটা যুক্ত হয়নি।")
+        st.info("ℹ️ এখন পর্যন্ত কোনো অ্যাক্টিভিটি ডেটা পাওয়া যায়নি। স্টাডি শুরু করুন!")
