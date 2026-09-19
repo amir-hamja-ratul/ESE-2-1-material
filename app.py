@@ -158,7 +158,7 @@ def track(action, course_code):
 # ==========================================================
 def ask_gemini(llm, docs, question):
     context = "\n\n".join([doc.page_content for doc in docs])
-    prompt = f"Role: Expert Academic Assistant.\nContext:\n{context}\n\nQuestion: {question}\n\nAnswer in Bengali clearly:"
+    prompt = f"Role: Expert Academic Assistant.\nContext:\n{context}\n\nQuestion: {question}\n\nAnswer clearly in Bengali:"
     try:
         response = llm.invoke(prompt)
         return response.content if hasattr(response, 'content') else str(response)
@@ -496,21 +496,6 @@ COURSES = {
 course_options = [f"{code} - {title}" for code, title in COURSES.items()]
 
 with st.sidebar:
-  st.markdown(f"""
-    <div style="
-        text-align: center; 
-        margin-bottom: 18px; 
-        padding: 14px; 
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(79, 70, 229, 0.05) 100%); 
-        backdrop-filter: blur(12px);
-        border-radius: 18px; 
-        border: 1.5px solid rgba(99, 102, 241, 0.3); 
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
-    ">
-        <img src="data:image/png;base64,{b64_logo}" style="max-width: 85%; height: auto; border-radius: 50%;">
-    </div>
-""", unsafe_allow_html=True)
-    )
     sidebar_logo_png = os.path.join(ASSETS_DIR, "ese10_logo.png")
     sidebar_logo_jpg = os.path.join(ASSETS_DIR, "ese10_logo.jpg")
     
@@ -783,6 +768,34 @@ elif tab_selection == "📲 Offline Saved PDFs":
         }}
     }}
 
+    function deleteOfflinePDF(docId) {{
+        let request = indexedDB.open("EduHubOfflineDB", 2);
+        request.onsuccess = function(e) {{
+            let db = e.target.result;
+            let tx = db.transaction("pdf_store", "readwrite");
+            let store = tx.objectStore("pdf_store");
+            store.delete(docId);
+            tx.oncomplete = function() {{
+                loadOfflinePDFs();
+            }};
+        }};
+    }}
+
+    function clearAllOfflineData() {{
+        if(confirm("আপনি কি সত্যিই সেভ করা সকল অফলাইন PDF মুছে ফেলতে চান?")) {{
+            let request = indexedDB.open("EduHubOfflineDB", 2);
+            request.onsuccess = function(e) {{
+                let db = e.target.result;
+                let tx = db.transaction("pdf_store", "readwrite");
+                let store = tx.objectStore("pdf_store");
+                store.clear();
+                tx.oncomplete = function() {{
+                    loadOfflinePDFs();
+                }};
+            }};
+        }}
+    }}
+
     function loadOfflinePDFs() {{
         let selectedCourse = document.getElementById("courseFilter").value;
         let container = document.getElementById("pdf-display-area");
@@ -802,93 +815,96 @@ elif tab_selection == "📲 Offline Saved PDFs":
             let req = store.getAll();
             req.onsuccess = function() {{
                 let items = req.result;
-                if (selectedCourse !== "ALL") {{
-                    items = items.filter(i => i.course_code === selectedCourse);
-                }}
-                if (items.length === 0) {{
-                    statusDiv.innerHTML = "ℹ️ এই কোর্সের জন্য কোনো অফলাইন PDF সেভ করা নেই।";
+                if (!items || items.length === 0) {{
+                    statusDiv.innerHTML = "ℹ️ কোনো সেভ করা ফাইল পাওয়া যায়নি।";
                     return;
                 }}
-                statusDiv.innerHTML = "✅ " + items.length + " টি অফলাইন PDF পাওয়া গেছে।";
-                items.forEach(item => {{
+                let filtered = selectedCourse === "ALL" 
+                    ? items 
+                    : items.filter(i => i.course_code === selectedCourse);
+
+                if (filtered.length === 0) {{
+                    statusDiv.innerHTML = "ℹ️ নির্বাচিত কোর্সের জন্য কোনো সেভ করা ফাইল পাওয়া যায়নি।";
+                    return;
+                }}
+
+                statusDiv.innerHTML = "✅ মোট " + filtered.length + " টি অফলাইন ফাইল পাওয়া গেছে:";
+                
+                filtered.forEach(item => {{
                     let card = document.createElement("div");
-                    card.style.cssText = "background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #CBD5E1;";
-                    card.innerHTML = "<h4 style='margin:0 0 10px 0; color:#0F172A; font-family:sans-serif;'>📄 " + item.file_name + " (" + item.course_code + ")</h4>";
+                    card.style.cssText = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 12px; padding: 16px; margin-bottom: 20px;";
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; font-family:sans-serif;">
+                            <div>
+                                <h4 style="margin:0; color:#0F172A; font-size: 1.05rem;">📘 ${item.course_code}: ${item.file_name}</h4>
+                                <span style="font-size:0.8rem; color:#64748B;">Saved on: ${item.saved_at}</span>
+                            </div>
+                            <button onclick="deleteOfflinePDF('${item.id}')" style="background:#EF4444; color:white; border:none; padding:7px 14px; border-radius:8px; cursor:pointer; font-weight:600; font-family:sans-serif;">🗑️ Delete</button>
+                        </div>
+                    `;
+                    let viewerContainer = document.createElement("div");
+                    card.appendChild(viewerContainer);
                     container.appendChild(card);
-                    renderPdfPages(item.base64, card);
+                    renderPdfPages(item.base64, viewerContainer);
                 }});
             }};
         }};
     }}
 
-    function clearAllOfflineData() {{
-        if(confirm("আপনি কি সব সেভ করা অফলাইন PDF মুছে ফেলতে চান?")) {{
-            let request = indexedDB.open("EduHubOfflineDB", 2);
-            request.onsuccess = function(e) {{
-                let db = e.target.result;
-                let tx = db.transaction("pdf_store", "readwrite");
-                let store = tx.objectStore("pdf_store");
-                store.clear();
-                tx.oncomplete = function() {{
-                    alert("সব অফলাইন PDF মুছে ফেলা হয়েছে!");
-                    loadOfflinePDFs();
-                }};
-            }};
-        }}
-    }}
-
-    setTimeout(() => {{
+    window.onload = function() {{
         populateDropdown();
         loadOfflinePDFs();
-    }}, 500);
+    }};
     </script>
     """
-    components.html(offline_manager_html, height=750, scrolling=True)
+    components.html(offline_manager_html, height=800, scrolling=True)
 
 # ==========================================================
 # TAB 3: 💬 AI Q&A
 # ==========================================================
 elif tab_selection == "💬 AI Q&A":
-    st.subheader(f"💬 AI Assistant - {selected_code}")
+    st.subheader(f"💬 AI Question & Answer - {selected_code}")
     track("AI Q&A", selected_code)
-
+    
     if not raw_text.strip():
-        st.warning("⚠️ প্রশ্ন করার জন্য এই কোর্সে পর্যাপ্ত PDF বা টেক্সট পাওয়া যায়নি।")
+        st.warning("⚠️ AI উত্তর দেওয়ার জন্য কোনো ডকুমেন্টের টেক্সট পাওয়া যায়নি।")
     else:
         text_hash = hashlib.md5(raw_text.encode('utf-8')).hexdigest()
-        vectorstore = build_vector_store(selected_code, text_hash, raw_text)
+        with st.spinner("🔍 Vector store প্রস্তুত করা হচ্ছে..."):
+            vector_store = build_vector_store(selected_code, text_hash, raw_text)
         
-        user_question = st.text_input("❓ কোর্স সম্পর্কিত যেকোনো প্রশ্ন করুন:", placeholder="যেমন: Define Hydrology and its components...")
-        if st.button("🚀 উত্তর খুঁজুন"):
-            if user_question.strip():
-                with st.spinner("AI উত্তর তৈরি করছে..."):
-                    docs = vectorstore.similarity_search(user_question, k=3)
+        user_q = st.text_input("❓ আপনার প্রশ্ন লিখুন (বাংলা বা ইংরেজিতে):", placeholder="যেমন: কোর্সটি কী বিষয়ে?")
+        if st.button("🤖 উত্তর খুঁজুন", use_container_width=True):
+            if user_q.strip():
+                with st.spinner("🤖 AI উত্তর তৈরি করছে..."):
                     llm = get_llm(api_key)
-                    answer = ask_gemini(llm, docs, user_question)
-                    st.markdown("### 💡 উত্তর:")
-                    st.info(answer)
+                    docs = vector_store.similarity_search(user_q, k=4)
+                    ans = ask_gemini(llm, docs, user_q)
+                    st.markdown("### 💡 AI এর উত্তর:")
+                    st.info(ans)
             else:
-                st.warning("দয়া করে একটি প্রশ্ন টাইপ করুন।")
+                st.warning("অনুগ্রহ করে একটি প্রশ্ন লিখুন।")
 
 # ==========================================================
 # TAB 4: 📝 SMART SUMMARY
 # ==========================================================
 elif tab_selection == "📝 Smart Summary":
-    st.subheader(f"📝 Instant Course Summary - {selected_code}")
-    track("Summary Generator", selected_code)
-
+    st.subheader(f"📝 Smart Course Summary - {selected_code}")
+    track("Smart Summary", selected_code)
+    
     if not raw_text.strip():
-        st.warning("⚠️ সামারি তৈরি করার জন্য কোনো টেক্সট পাওয়া যায়নি।")
+        st.warning("⚠️ সমারি তৈরি করার জন্য কোনো টেক্সট সম্বলিত ডকুমেন্ট পাওয়া যায়নি।")
     else:
-        if st.button("✨ সামারি তৈরি করুন"):
-            with st.spinner("কোর্সের মূল পয়েন্ট বিশ্লেষণ করা হচ্ছে..."):
+        if st.button("✨ কোর্স সমারি তৈরি করুন", use_container_width=True):
+            with st.spinner("🧠 AI ডকুমেন্ট বিশ্লেষণ করছে..."):
                 llm = get_llm(api_key)
-                summary_prompt = f"Role: Academic Summarizer.\nSummarize the following study material into clear, structured bullet points in Bengali:\n\n{raw_text[:4000]}"
+                trimmed_text = raw_text[:6000]
+                prompt = f"Role: Academic Expert in Environmental Science.\nSummarize the following study material concise and bulleted in Bengali:\n\n{trimmed_text}"
                 try:
-                    res = llm.invoke(summary_prompt)
+                    res = llm.invoke(prompt)
                     summary_text = res.content if hasattr(res, 'content') else str(res)
-                    st.success("✅ সামারি প্রস্তুত:")
-                    st.write(summary_text)
+                    st.markdown("### 📋 মূলবিষয় ও সারসংক্ষেপ:")
+                    st.success(summary_text)
                 except Exception as e:
                     st.error(f"Error generating summary: {e}")
 
@@ -896,20 +912,23 @@ elif tab_selection == "📝 Smart Summary":
 # TAB 5: 🎯 EXAM QUIZ
 # ==========================================================
 elif tab_selection == "🎯 Exam Quiz":
-    st.subheader(f"🎯 Practice Quiz - {selected_code}")
-    track("Exam Quiz", selected_code)
-
+    st.subheader(f"🎯 AI Practice Quiz Generator - {selected_code}")
+    track("Quiz Generator", selected_code)
+    
     if not raw_text.strip():
-        st.warning("⚠️ কুইজ তৈরি করার মতো টেক্সট পাওয়া যায়নি।")
+        st.warning("⚠️ কুইজ তৈরি করার জন্য কোনো টেক্সট সম্বলিত ডকুমেন্ট পাওয়া যায়নি।")
     else:
-        if st.button("🎲 নতুন কুইজ তৈরি করুন"):
-            with st.spinner("কুইজ তৈরি করা হচ্ছে..."):
+        num_q = st.slider("কুইজ প্রশ্নের সংখ্যা নির্বাচন করুন:", 3, 10, 5)
+        if st.button("🎲 কুইজ প্রশ্ন তৈরি করুন", use_container_width=True):
+            with st.spinner("🎯 কুইজ প্রশ্ন তৈরি হচ্ছে..."):
                 llm = get_llm(api_key)
-                quiz_prompt = f"Generate 3 multiple choice questions (MCQ) with options and correct answer based on this content:\n\n{raw_text[:3000]}"
+                trimmed_text = raw_text[:6000]
+                prompt = f"Role: Exam Creator.\nBased on the content below, create {num_q} practice questions with answers in Bengali:\n\n{trimmed_text}"
                 try:
-                    res = llm.invoke(quiz_prompt)
+                    res = llm.invoke(prompt)
                     quiz_text = res.content if hasattr(res, 'content') else str(res)
-                    st.markdown(quiz_text)
+                    st.markdown("### 📝 পরীক্ষা প্রস্তুতি প্রশ্নাবলী:")
+                    st.write(quiz_text)
                 except Exception as e:
                     st.error(f"Error generating quiz: {e}")
 
@@ -917,42 +936,53 @@ elif tab_selection == "🎯 Exam Quiz":
 # TAB 6: 📈 MY PROGRESS
 # ==========================================================
 elif tab_selection == "📈 My Progress":
-    st.subheader("📈 My Study Progress & Analytics")
+    st.subheader("📈 My Learning Analytics")
     sid = st.session_state.get("student_id")
-    sname = st.session_state.get("student_name", "")
-
+    sname = st.session_state.get("student_name", "Student")
+    
     if not sid:
-        st.info("💡 আপনার প্রগ্রেস ট্র্যাক করতে সাইডবারে **Your Name** এবং **Roll Number** লিখুন।")
+        st.warning("⚠️ আপনার অগ্রগতি দেখতে সাইডবার থেকে আপনার রোল নম্বর এবং নাম প্রদান করুন।")
     else:
         streak = get_study_streak(sid)
         total_act = get_total_activities(sid)
-        c_progress = get_course_progress(sid)
-
-        col1, col2 = st.columns(2)
-        with col1:
+        course_prog = get_course_progress(sid)
+        
+        st.markdown(f"### 👋 স্বাগতম, **{sname}** (Roll: `{sid}`)")
+        
+        c1, c2 = st.columns(2)
+        with c1:
             st.markdown(f'<div class="metric-card"><div class="metric-card-val">🔥 {streak} Days</div><div class="metric-card-lbl">Study Streak</div></div>', unsafe_allow_html=True)
-        with col2:
+        with c2:
             st.markdown(f'<div class="metric-card"><div class="metric-card-val">⚡ {total_act}</div><div class="metric-card-lbl">Total Activities</div></div>', unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.write("### 📚 কোর্স অনুযায়ী আপনার পড়াশোনা:")
-        if c_progress:
-            for c_code, count in c_progress.items():
-                st.write(f"• **{c_code}**: {count} বার পড়া হয়েছে")
+        
+        st.divider()
+        st.markdown("### 📚 কোর্স অনুযায়ী পড়াশোনার সক্রিয়তা:")
+        if course_prog:
+            for c_code, count in course_prog.items():
+                st.write(f"**{c_code}**: {count} টি অ্যাক্টিভিটি")
+                st.progress(min(count / 20.0, 1.0))
         else:
-            st.caption("এখনো কোনো অ্যাক্টিভিটি রেকর্ড হয়নি।")
+            st.info("এখনো কোনো কোর্স অ্যাক্টিভিটি রেকর্ড হয়নি।")
 
 # ==========================================================
 # TAB 7: 📊 LEADERBOARD
 # ==========================================================
 elif tab_selection == "📊 Leaderboard":
-    st.subheader("📊 Top Active Students Leaderboard")
-    board = get_leaderboard()
+    st.subheader("📊 EduHub Student Leaderboard")
+    leaderboard_data = get_leaderboard()
     
-    if board:
-        for idx, row in enumerate(board, start=1):
-            name, roll, count, last = row
-            st.markdown(f"**#{idx} {name}** (`{roll}`) — **{count}** টি অ্যাক্টিভিটি (সর্বশেষ: {last})")
-            st.divider()
+    if leaderboard_data:
+        st.markdown("### 🏆 সেরা ১০ জন সক্রিয় শিক্ষার্থী:")
+        table_data = []
+        for idx, (name, s_id, count, last_active) in enumerate(leaderboard_data, 1):
+            badge = "🥇" if idx == 1 else ("🥈" if idx == 2 else ("🥉" if idx == 3 else f"#{idx}"))
+            table_data.append({
+                "Rank": badge,
+                "Student Name": name or "Unknown",
+                "Roll ID": s_id,
+                "Total Activities": count,
+                "Last Active": last_active
+            })
+        st.table(table_data)
     else:
         st.info("এখনো কোনো লিডারবোর্ড ডাটা নেই।")
