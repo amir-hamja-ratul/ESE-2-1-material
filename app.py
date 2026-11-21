@@ -233,11 +233,17 @@ st.markdown("""
     }
 
     html, body, [class*="css"] { 
-        font-family: 'Plus Jakarta Sans', sans-serif; 
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #0F172A;
     }
-    h1, h2, h3, h4 { 
+    h1, h2, h3, h4,
+    [data-testid="stHeading"] h2,
+    [data-testid="stHeading"] h3 { 
         font-family: 'Outfit', sans-serif !important; 
         letter-spacing: -0.02em;
+        color: #0F172A !important;
+        opacity: 1 !important;
+        filter: none !important;
     }
 
     .stApp { 
@@ -290,21 +296,34 @@ st.markdown("""
     }
 
     section[data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, 0.45) !important;
+        background: rgba(255, 255, 255, 0.72) !important;
         backdrop-filter: blur(20px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.6) !important;
         box-shadow: 10px 0 30px rgba(0, 0, 0, 0.03) !important;
     }
 
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] .stMarkdown p {
+        color: #0F172A !important;
+        font-weight: 600 !important;
+        opacity: 1 !important;
+    }
+
     section[data-testid="stSidebar"] .stTextInput input, 
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
-        background: rgba(255, 255, 255, 0.65) !important;
-        border: 1px solid rgba(203, 213, 225, 0.7) !important;
-        backdrop-filter: blur(8px) !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
+        border: 1px solid #CBD5E1 !important;
         border-radius: 12px !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
         transition: all 0.25s ease !important;
+        opacity: 1 !important;
+    }
+
+    section[data-testid="stSidebar"] input::placeholder {
+        color: #64748B !important;
+        opacity: 1 !important;
     }
 
     .course-card {
@@ -326,7 +345,7 @@ st.markdown("""
     }
 
     .metric-card {
-        background: rgba(255, 255, 255, 0.75); 
+        background: rgba(255, 255, 255, 0.85); 
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.8); 
         border-radius: var(--radius-md);
@@ -357,7 +376,7 @@ st.markdown("""
     }
 
     div[data-testid="stRadio"] {
-        background: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.75);
         backdrop-filter: blur(10px);
         padding: 6px;
         border-radius: 18px;
@@ -380,7 +399,7 @@ st.markdown("""
         border: none !important;
         border-radius: 12px !important; 
         padding: 10px 20px !important; 
-        color: #475569 !important;
+        color: #334155 !important;
         font-weight: 600 !important; 
         font-size: 0.88rem !important; 
         cursor: pointer !important;
@@ -519,9 +538,9 @@ with st.sidebar:
     selected_title = COURSES[selected_code]
 
     st.divider()
-    st.markdown("<p style='font-size: 0.8rem; font-weight: 800; color: #64748B; letter-spacing: 0.05em;'>YOUR PROFILE</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 0.8rem; font-weight: 800; color: #0F172A; letter-spacing: 0.05em;'>YOUR PROFILE</p>", unsafe_allow_html=True)
     student_name_input = st.text_input("Your Name", placeholder="e.g. Amir Hamja Ratul", key="student_name_field")
-    student_roll_input = st.text_input("Roll Number", placeholder="e.g. 25103402", key="student_roll_field")
+    student_roll_input = st.text_input("Roll Number", placeholder="e.g. 25103406", key="student_roll_field")
     
     if student_roll_input.strip():
         st.session_state["student_id"] = student_roll_input.strip()
@@ -814,5 +833,3 @@ elif tab_selection == "📲 Offline Saved PDFs":
     </script>
     """
     components.html(offline_manager_html, height=800, scrolling=True)
-
-# ==========================================================
